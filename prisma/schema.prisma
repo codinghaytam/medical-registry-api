@@ -1,0 +1,172 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ETUDIANT
+  MEDECIN
+  ADMIN
+}
+
+enum ActionType {
+  TRANSFER_ORTHO
+  TRANSFER_PARO
+}
+
+enum Status {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum Profession {
+  PARODONTAIRE
+  ORTHODONTAIRE
+}
+
+enum MotifConsultation {
+  ESTHETIQUE
+  FONCTIONNELLE
+  ADRESSE_PAR_CONFRERE
+}
+
+enum HygieneBuccoDentaire {
+  BONNE
+  MOYENNE
+  MAUVAISE
+}
+
+enum TypeMastication {
+  UNILATERALE_ALTERNEE
+  UNILATERALE_STRICTE
+  BILATERALE
+}
+
+enum SeanceType {
+  DETARTRAGE
+  SURFACAGE
+  ACTIVATION
+  RECOLLAGE
+  REEVALUATION
+}
+
+model User {
+  id       String    @id @default(uuid())
+  username String
+  email    String    @unique
+  name     String
+  role     Role
+  medecin  Medecin?
+  etudiant Etudiant?
+}
+
+model Medecin {
+  id            String         @id @default(uuid())
+  profession    Profession
+  isSpecialiste Boolean        @default(false)
+  user          User           @relation(fields: [userId], references: [id])
+  userId        String         @unique
+  actions       Action[]
+  consultations Consultation[]
+  Diagnostique  Diagnostique[]
+  Seance        Seance[]
+}
+
+model Etudiant {
+  id     String @id @default(uuid())
+  niveau Int
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @unique
+}
+
+model Patient {
+  id                   String               @id @default(uuid())
+  nom                  String
+  numeroDeDossier      String               @unique
+  prenom               String
+  adresse              String
+  tel                  String
+  motifConsultation    MotifConsultation
+  anameseGenerale      String?
+  anamneseFamiliale    String?
+  anamneseLocale       String?
+  hygieneBuccoDentaire HygieneBuccoDentaire
+  typeMastication      TypeMastication
+  antecedentsDentaires String?
+  consultations        Consultation[]
+  Seances              Seance[]
+  actions              Action[]
+  State                Profession  @default(PARODONTAIRE)
+}
+
+model Consultation {
+  id             String         @id @default(uuid())
+  date           DateTime
+  idConsultation String         @unique
+  patient        Patient        @relation(fields: [patientId], references: [id])
+  patientId      String
+  diagnostiques  Diagnostique[]
+  medecin        Medecin        @relation(fields: [medecinId], references: [id])
+  medecinId      String
+}
+
+model Diagnostique {
+  id             String       @id @default(uuid())
+  type           String
+  text           String
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  consultationId String
+
+  Medecin   Medecin? @relation(fields: [medecinId], references: [id])
+  medecinId String?
+}
+
+model Seance {
+  id        String     @id @default(uuid())
+  type      SeanceType
+  date      DateTime
+  patient   Patient    @relation(fields: [patientId], references: [id])
+  medecin   Medecin    @relation(fields: [medecinId], references: [id])
+  medecinId String
+  patientId String
+  Reevaluation Reevaluation?
+}
+
+model Reevaluation {
+  id              String   @id @default(uuid())
+  indiceDePlaque  Float
+  indiceGingivale Float
+  sondagePhoto    String? // URL or path to the pocket probing photo
+  seance         Seance  @relation(fields: [seanceId], references: [id])
+  seanceId       String @unique
+}
+
+model Action {
+  id          String   @id @default(uuid())
+  type        ActionType
+  date        DateTime
+  isValid     Boolean
+  medecin     Medecin  @relation(fields: [medecinId], references: [id])
+  medecinId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  patientId   String
+}
+
+
+
+model Task {
+  id     String @id @default(uuid())
+  title  String
+  status Status @default(PENDING)
+}
