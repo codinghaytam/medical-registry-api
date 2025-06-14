@@ -28,7 +28,9 @@ jobs:
       - uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-
+      - name: checkout code
+        uses: actions/checkout@v3
+        run: ls
       - name: Update DigitalOcean App with new image
         run: |
           doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} --wait
