@@ -31,7 +31,6 @@ jobs:
 
       - name: Update DigitalOcean App with new image
         run: |
-          doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} \
-          --spec .github/workflows/app.yaml \
+          doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} --wait
       - env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
