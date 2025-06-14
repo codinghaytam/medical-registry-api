@@ -10,6 +10,5 @@ services:
       registry_type: DOCKER_HUB
       repository: medical-registry-api  # Just the repository name
       tag: latest
-      registry:
-        username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      registry: "{{ secrets.DOCKER_HUB_USERNAME }}"
+       
