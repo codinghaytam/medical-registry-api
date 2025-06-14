@@ -4,10 +4,12 @@ services:
     dockerfile_path: Dockerfile
     envs:
       - key: DATABASE_URL
-        scope: RUN_TIME  # Required for secrets
-        value: "{{ secrets.DATABASE_URL }}"  # References a DO-managed secret
+        scope: RUN_TIME
+        value: "{{ secrets.DATABASE_URL }}"
     image:
-        registry_type: DOCKER_HUB
-        repository: ${{ secrets.DOCKER_HUB_USERNAME }}/medical-registry-api
-        tag: latest
-        registry_credentials: ${{ secrets.DOCKER_HUB_USERNAME }}:${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      registry_type: DOCKER_HUB
+      repository: medical-registry-api  # Just the repository name
+      tag: latest
+      registry:
+        username: "{{ secrets.DOCKER_HUB_USERNAME }}"
+        password: "{{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}"
