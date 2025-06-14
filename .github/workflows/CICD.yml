@@ -32,6 +32,6 @@ jobs:
         run: ls
       - name: Update DigitalOcean App with new image
         run: |
-          doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} --wait
+          doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} --spec app.yaml
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
