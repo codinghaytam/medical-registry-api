@@ -38,7 +38,7 @@ jobs:
          echo "    envs:" >> app.yaml
          echo "      - key: DATABASE_URL" >> app.yaml
          echo "        scope: RUN_TIME" >> app.yaml
-         echo "        value: \"{{ secrets.DATABASE_URL }}\"" >> app.yaml
+         echo "        value: ${{ secrets.DATABASE_URL }}" >> app.yaml
          echo "    image:" >> app.yaml
          echo "      registry_type: DOCKER_HUB" >> app.yaml
          echo "      repository: ${{ secrets.DOCKER_HUB_USERNAME }}/medical-registry-api" >> app.yaml
@@ -46,4 +46,4 @@ jobs:
       - name: Update DigitalOcean App with new image
         run: |
           doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} \
-            --spec ./app.yaml --env KEY=${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+            --spec ./app.yaml
