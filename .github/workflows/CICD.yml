@@ -39,9 +39,9 @@ jobs:
           echo "        scope: RUN_TIME" >> app.yaml
           echo "        value: \"{{ secrets.DATABASE_URL }}\"" >> app.yaml
           echo      image:
-          echo          registry: docker.io >> app.yaml
-          echo          repository: haytamd44/medical-registry-api >> app.yaml
-          echo          tag: latest   >> app.yaml
+          echo          DOCKER_HUB:
+          echo              repository: haytamd44/medical-registry-api >> app.yaml
+          echo              tag: latest   >> app.yaml
       - name: Update DigitalOcean App with new image
         run: |
           doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} \
