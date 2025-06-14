@@ -40,7 +40,7 @@ jobs:
           echo "        scope: RUN_TIME" >> app.yaml
           echo "        value: \"{{ secrets.DATABASE_URL }}\"" >> app.yaml
           echo "    image:" >> app.yaml
-          echo "        registry_type: DOCKER_HUB" >> app.yaml
+          echo "      - registry_type: DOCKER_HUB" >> app.yaml
           echo "        repository: haytamd44/medical-registry-api" >> app.yaml
           echo "        tag: latest"   >> app.yaml
       - name: Update DigitalOcean App with new image
