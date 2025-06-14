@@ -30,11 +30,14 @@ jobs:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
       - name: Checkout repository
         run: |
-          echo "Repository contents:"
-          ls -R
-          pwd
-          echo "Checking .do/app.yaml:"
-          ls -la ./app.yaml || echo "ERROR: File missing"
+         touch app.yaml
+         echo "services:" > app.yaml
+          echo "  - name: web" >> app.yaml
+          echo "    dockerfile_path: Dockerfile" >> app.yaml
+          echo "    envs:" >> app.yaml
+          echo "      - key: DATABASE_URL" >> app.yaml
+          echo "        scope: RUN_TIME" >> app.yaml
+          echo "        value: \"{{ secrets.DATABASE_URL }}\"" >> app.yaml
       - name: Update DigitalOcean App with new image
         run: |
           doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} \
