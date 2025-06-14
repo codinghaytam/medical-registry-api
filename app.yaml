@@ -2,13 +2,9 @@ name: medical-registry-api
 services:
   - name: walrus-app
     dockerfile_path: Dockerfile
-    envs:
-      - key: DATABASE_URL
-        scope: RUN_TIME
-        value: "${{ secrets.DATABASE_URL }}"
     image:
       registry_type: DOCKER_HUB
       repository: medical-registry-api  # Just the repository name
       tag: latest
-      registry: "${{ secrets.DOCKER_HUB_USERNAME }}"
+      registry: "haytamd44"
        
