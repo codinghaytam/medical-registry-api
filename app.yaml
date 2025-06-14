@@ -1,5 +1,5 @@
 services:
-  - name: web
+  - name: walrus-app
     dockerfile_path: Dockerfile
     envs:
       - key: DATABASE_URL
