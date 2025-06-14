@@ -33,16 +33,16 @@ jobs:
          touch app.yaml
          echo "name: medical-registry-api" > app.yaml
          echo "services:" >> app.yaml
-          echo "  - name: web" >> app.yaml
-          echo "    dockerfile_path: Dockerfile" >> app.yaml
-          echo "    envs:" >> app.yaml
-          echo "      - key: DATABASE_URL" >> app.yaml
-          echo "        scope: RUN_TIME" >> app.yaml
-          echo "        value: \"{{ secrets.DATABASE_URL }}\"" >> app.yaml
-          echo "    image:" >> app.yaml
-          echo "      - registry_type: DOCKER_HUB" >> app.yaml
-          echo "        repository: haytamd44/medical-registry-api" >> app.yaml
-          echo "        tag: latest"   >> app.yaml
+         echo "  - name: web" >> app.yaml
+         echo "    dockerfile_path: Dockerfile" >> app.yaml
+         echo "    envs:" >> app.yaml
+         echo "      - key: DATABASE_URL" >> app.yaml
+         echo "        scope: RUN_TIME" >> app.yaml
+         echo "        value: \"{{ secrets.DATABASE_URL }}\"" >> app.yaml
+         echo "    image:" >> app.yaml
+         echo "      registry_type: DOCKER_HUB" >> app.yaml
+         echo "      repository: ${{ secrets.DOCKER_HUB_USERNAME }}/medical-registry-api" >> app.yaml
+         echo "      tag: latest" >> app.yaml
       - name: Update DigitalOcean App with new image
         run: |
           doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} \
