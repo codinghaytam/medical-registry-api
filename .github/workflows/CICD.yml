@@ -34,7 +34,7 @@ jobs:
           ls -R
           pwd
           echo "Checking .do/app.yaml:"
-          ls -la .do/app.yaml || echo "ERROR: File missing"
+          ls -la ./app.yaml || echo "ERROR: File missing"
       - name: Update DigitalOcean App with new image
         run: |
           doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} \
