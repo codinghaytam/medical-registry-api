@@ -29,7 +29,6 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
       - name: Checkout repository
-      name: Verify app.yaml exists
         run: |
           echo "Repository contents:"
           ls -R
