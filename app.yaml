@@ -1,0 +1,7 @@
+services:
+  - name: web
+    dockerfile_path: Dockerfile
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME  # Required for secrets
+        value: "{{ secrets.DATABASE_URL }}"  # References a DO-managed secret
