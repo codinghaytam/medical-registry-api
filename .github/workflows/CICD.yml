@@ -43,9 +43,8 @@ jobs:
          echo "      registry_type: DOCKER_HUB" >> app.yaml
          echo "      repository: ${{ secrets.DOCKER_HUB_USERNAME }}/medical-registry-api" >> app.yaml
          echo "      tag: latest" >> app.yaml
-         echo "      registry_credentials:" >> app.yaml
-         echo "         username: ${{ secrets.DOCKER_HUB_USERNAME }}" >> app.yaml
-         echo "         password: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" >> app.yaml
+         echo "      registry_credentials: "${{ secrets.DOCKER_HUB_USERNAME }}:${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}"" >> app.yaml
+
       - name: Update DigitalOcean App with new image
         run: |
           doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} \
