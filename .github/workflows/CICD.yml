@@ -28,7 +28,13 @@ jobs:
       - uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          
+      - name: Checkout repository
+      name: Verify app.yaml exists
+        run: |
+          echo "Repository contents:"
+          ls -R
+          echo "Checking .do/app.yaml:"
+          ls -la .do/app.yaml || echo "ERROR: File missing"
       - name: Update DigitalOcean App with new image
         run: |
           doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} \
