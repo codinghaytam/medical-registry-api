@@ -1,3 +1,4 @@
+name: medical-registry-api
 services:
   - name: walrus-app
     dockerfile_path: Dockerfile
