@@ -96,11 +96,12 @@ router.post('/', async function(req: Request<{}, {}, EtudiantRequestBody>, res: 
     const newEtudiant = await prisma.etudiant.create({
       data: {
         userId: user.id,
-        niveau: parseInt(req.body.niveau),
+        niveau: parseInt(req.body.niveau)
       }
     });
-    res.status(201).send("user "+newEtudiant.id+"created");
+    res.status(201).send(newEtudiant);
   } catch (e) {
+    console.log(e);
     res.status(500).send({ error: "Failed to create etudiant and Keycloak user: " + e });
   } finally {
     await prisma.$disconnect();
