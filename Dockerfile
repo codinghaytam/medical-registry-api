@@ -20,6 +20,7 @@ COPY . /app
 
 # Create .env file from build arguments
 RUN set -e && \
+    echo "${DATABASE_URL}" && \
     echo "# Environment variables declared in this file are automatically made available to Prisma." > .env && \
     echo "# See the documentation for more detail: https://pris.ly/d/prisma-schema#accessing-environment-variables-from-the-schema" >> .env && \
     echo "" >> .env && \
