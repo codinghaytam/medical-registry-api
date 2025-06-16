@@ -29,8 +29,7 @@ jobs:
             KEYCLOAK_REALM=${{ secrets.KEYCLOAK_REALM }}
             KEYCLOAK_CLIENT=${{ secrets.KEYCLOAK_CLIENT }}
             KEYCLOAK_CLIENT_SECRET=${{ secrets.KEYCLOAK_CLIENT_SECRET }}
-            ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
-            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+
           
   deploy:
     needs: build-and-push

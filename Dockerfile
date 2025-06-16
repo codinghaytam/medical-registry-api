@@ -1,4 +1,4 @@
-FROM node
+FROM node:latest
 WORKDIR /app
 
 # Define build arguments for environment variables
@@ -8,8 +8,7 @@ ARG KEYCLOAK_URL
 ARG KEYCLOAK_REALM
 ARG KEYCLOAK_CLIENT
 ARG KEYCLOAK_CLIENT_SECRET
-ARG ADMIN_USERNAME
-ARG ADMIN_PASSWORD
+
 
 # Copy package files and install dependencies
 COPY ./package.json /app 
@@ -29,8 +28,6 @@ RUN echo "# Environment variables declared in this file are automatically made a
     echo "KEYCLOAK_REALM=${KEYCLOAK_REALM}" >> .env && \
     echo "KEYCLOAK_CLIENT=${KEYCLOAK_CLIENT}" >> .env && \
     echo "KEYCLOAK_URL=${KEYCLOAK_URL}" >> .env && \
-    echo "ADMIN_USERNAME=${ADMIN_USERNAME}" >> .env && \
-    echo "ADMIN_PASSWORD=${ADMIN_PASSWORD}" >> .env && \
     echo "KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}" >> .env
 
 # Start the application
