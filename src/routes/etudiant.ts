@@ -1,7 +1,7 @@
 'use strict';
 
 import express, { Request, Response, NextFunction, Router } from 'express';
-import { PrismaClient, Etudiant, User } from '@prisma/client';
+import { PrismaClient, Etudiant, User, Role } from '@prisma/client';
 import { connectToKeycloak } from '../utils/keycloak.js';
 import KcAdminClient from '@keycloak/keycloak-admin-client';
 const router: Router = express.Router();
@@ -88,7 +88,7 @@ router.post('/', async function(req: Request<{}, {}, EtudiantRequestBody>, res: 
         username: req.body.username,
         email: req.body.email,
         name: `${req.body.firstName} ${req.body.lastName}`,
-        role: 'ETUDIANT'
+        role: Role.ETUDIANT,
       }
     });
 
