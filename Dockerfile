@@ -33,5 +33,5 @@ RUN set -e && \
     echo "KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}" >> .env
 
 # Start the application
-CMD npx prisma generate && npm run start
+CMD npx prisma generate && npx prisma migrate deploy && npm run start
 EXPOSE 3000

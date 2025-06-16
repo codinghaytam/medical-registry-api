@@ -173,7 +173,12 @@ routes.post("/", async function(req: Request, res: Response, _next: NextFunction
         
         // Create user in local database
         const user = await prisma.user.create({
-            data: userData
+            data: {
+                username: req.body.username,
+                name: req.body.firstName + " " + req.body.lastName,
+                email: req.body.email,
+                role: Role.MEDECIN,
+            }         
         });
         
         res.status(201).json(user);
