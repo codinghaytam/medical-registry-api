@@ -154,7 +154,7 @@ routes.post("/", async function (req, res, _next) {
                 username: req.body.username,
                 name: req.body.firstName + " " + req.body.lastName,
                 email: req.body.email,
-                role: Role.MEDECIN,
+                role: data.role,
             }
         });
         res.status(201).json(user);

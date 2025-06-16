@@ -177,7 +177,7 @@ routes.post("/", async function(req: Request, res: Response, _next: NextFunction
                 username: req.body.username,
                 name: req.body.firstName + " " + req.body.lastName,
                 email: req.body.email,
-                role: Role.MEDECIN,
+                role: data.role as Role,
             }         
         });
         
