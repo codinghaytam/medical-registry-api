@@ -1,6 +1,6 @@
 'use strict';
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import { connectToKeycloak } from '../utils/keycloak.js';
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -78,7 +78,7 @@ router.post('/', async function (req, res, _next) {
                 username: req.body.username,
                 email: req.body.email,
                 name: `${req.body.firstName} ${req.body.lastName}`,
-                role: 'ETUDIANT'
+                role: Role.ETUDIANT,
             }
         });
         // Create etudiant and link to user
