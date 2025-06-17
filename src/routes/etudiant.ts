@@ -151,7 +151,7 @@ router.put('/:id', async function(req: Request<{id: string}, {}, Partial<Etudian
 
     // Update Prisma records
     const updatedEtudiant = await prisma.etudiant.update({
-      where: { id: req.params.id },
+      where: { id: etudiant.id },
       data: {
         ...req.body,
         niveau: req.body.niveau ? parseInt(req.body.niveau) : undefined

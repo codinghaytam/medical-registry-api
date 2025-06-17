@@ -207,7 +207,7 @@ routes.put("/:id", async function(req: Request, res: Response, _next: NextFuncti
         
         // Get current user
         const currentUser = await prisma.user.findUnique({
-            where: { id }
+            where: { id: id }
         });
         
         if (!currentUser) {
@@ -247,7 +247,7 @@ routes.put("/:id", async function(req: Request, res: Response, _next: NextFuncti
         }
         
         // Remove password from data before updating in database
-        const { password, ...userData } = data;
+        const { password,firstName,lastName, ...userData } = data;
         
         // Update user in local database
         const user = await prisma.user.update({

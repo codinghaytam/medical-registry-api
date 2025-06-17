@@ -236,12 +236,13 @@ router.put('/:id', async function(req: Request<{id: string}, {}, Partial<Medecin
       where: { id: medecin.userId },
       data: {
         email: req.body.email,
-        username: req.body.username
+        username: req.body.username,
+        name: req.body.firstName && req.body.lastName ? `${req.body.firstName} ${req.body.lastName}` : medecin.user.name
       }
     });
 
     const updatedMedecin = await prisma.medecin.update({
-      where: { id: req.params.id },
+      where: { id: medecin.id },
       data: {
         profession: req.body.profession as Profession,
         isSpecialiste: req.body.isSpecialiste
