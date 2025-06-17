@@ -181,7 +181,7 @@ router.delete('/:id', async function(req: Request<{id: string}>, res: Response, 
   try {
     // First get the etudiant and user
     const etudiant = await prisma.etudiant.findUnique({
-      where: { id: req.params.id },
+      where: { userId: req.params.id },
       include: {
         user: true
       }
@@ -194,15 +194,16 @@ router.delete('/:id', async function(req: Request<{id: string}>, res: Response, 
 
     // Delete from Keycloak first
     const kcAdminClient = await connectToKeycloak();
-    await kcAdminClient.users.del({ id: etudiant.user.id });
+    const KcUsertoDelete = await kcAdminClient.users.find({ email: etudiant.user.email });
+    await kcAdminClient.users.del({ id: KcUsertoDelete[0].id || '' });
 
     // Then delete from Prisma
     await prisma.etudiant.delete({
-      where: { id: req.params.id }
+      where: { id: etudiant.id }
     });
 
     await prisma.user.delete({
-      where: { id: etudiant.user.id }
+      where: { id: etudiant.userId }
     });
 
     res.status(204).send();

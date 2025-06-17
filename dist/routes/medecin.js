@@ -237,7 +237,7 @@ router.put('/:id', async function (req, res, _next) {
 router.delete('/:id', async function (req, res, _next) {
     try {
         const medecin = await prisma.medecin.findUnique({
-            where: { id: req.params.id },
+            where: { userId: req.params.id },
             include: { user: true }
         });
         if (!medecin) {
@@ -247,7 +247,7 @@ router.delete('/:id', async function (req, res, _next) {
             return res.status(400).send("invalid profession");
         }
         // Delete from local DB
-        await prisma.medecin.delete({ where: { id: req.params.id } });
+        await prisma.medecin.delete({ where: { id: medecin.id } });
         await prisma.user.delete({ where: { id: medecin.userId } });
         // Delete from Keycloak
         kcAdminClient = await connectToKeycloak();

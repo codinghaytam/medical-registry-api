@@ -264,7 +264,7 @@ router.put('/:id', async function(req: Request<{id: string}, {}, Partial<Medecin
 router.delete('/:id', async function(req: Request, res: Response, _next: NextFunction):Promise<any> {
   try {
     const medecin = await prisma.medecin.findUnique({
-      where: { id: req.params.id },
+      where: { userId: req.params.id },
       include: { user: true }
     });
 
@@ -277,7 +277,7 @@ router.delete('/:id', async function(req: Request, res: Response, _next: NextFun
     }
 
     // Delete from local DB
-    await prisma.medecin.delete({ where: { id: req.params.id } });
+    await prisma.medecin.delete({ where: { id: medecin.id } });
     await prisma.user.delete({ where: { id: medecin.userId } });
 
     // Delete from Keycloak
