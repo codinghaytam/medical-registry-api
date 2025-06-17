@@ -3,6 +3,7 @@ import { PrismaClient, Role } from "@prisma/client";
 import KcAdminClient from '@keycloak/keycloak-admin-client';
 import * as dotenv from "dotenv";
 import { connectToKeycloak, safeKeycloakConnect } from '../utils/keycloak.js';
+import { validatePhone } from '../utils/validation.js';
 
 dotenv.config()
 
@@ -30,6 +31,7 @@ interface UserRequestBody {
   email: string;
   firstName?: string;
   lastName?: string;
+  phone?: string;
 }
 
 // Get all users
@@ -143,7 +145,7 @@ routes.get("/email/:email", async function(req: Request, res: Response, _next: N
 });
 
 // Create new user
-routes.post("/", async function(req: Request, res: Response, _next: NextFunction) {
+routes.post("/", validatePhone, async function(req: Request, res: Response, _next: NextFunction) {
     try {
         const data = req.body;
         
@@ -158,26 +160,29 @@ routes.post("/", async function(req: Request, res: Response, _next: NextFunction
         // Create user in Keycloak
         const kc = await safeKeycloakConnect(res);
         if (!kc) return;
-        
-        const kcUser = await kc.users.create({
+          const kcUser = await kc.users.create({
             username: data.username,
             email: data.email,
             firstName: data.name ? data.name.split(' ')[0] : '',
             lastName: data.name ? data.name.split(' ').slice(1).join(' ') : '',
             enabled: true,
             credentials: [{ type: 'password', value: data.password, temporary: false }],
+            attributes: {
+                // Include phone number as an attribute if provided
+                ...(data.phone ? { phoneNumber: [data.phone] } : {})
+            }
         });
         
         // Remove password from data before storing in database
-        const { password, ...userData } = data;
-        
-        // Create user in local database
+        const { password, ...userData } = data;          // Create user in local database
         const user = await prisma.user.create({
             data: {
                 username: req.body.username,
                 name: req.body.firstName + " " + req.body.lastName,
                 email: req.body.email,
                 role: data.role as Role,
+                // @ts-ignore - phone field exists in the schema but might not be recognized by the TypeScript compiler
+                phone: req.body.phone || "",
             }         
         });
         
@@ -191,7 +196,7 @@ routes.post("/", async function(req: Request, res: Response, _next: NextFunction
 });
 
 // Update user
-routes.put("/:id", async function(req: Request, res: Response, _next: NextFunction) {
+routes.put("/:id", validatePhone, async function(req: Request, res: Response, _next: NextFunction) {
     try {
         const { id } = req.params;
         if (!id) {
@@ -221,14 +226,17 @@ routes.put("/:id", async function(req: Request, res: Response, _next: NextFuncti
             
             const kcUsers = await kc.users.find({ email: currentUser.email });
             
-            if (kcUsers && kcUsers.length > 0 && kcUsers[0].id) {
-                await kc.users.update(
+            if (kcUsers && kcUsers.length > 0 && kcUsers[0].id) {                await kc.users.update(
                     { id: kcUsers[0].id },
                     { 
                         email: data.email || currentUser.email, 
                         username: data.username || currentUser.username,
                         firstName: data.name ? data.name.split(' ')[0] : undefined,
-                        lastName: data.name ? data.name.split(' ').slice(1).join(' ') : undefined
+                        lastName: data.name ? data.name.split(' ').slice(1).join(' ') : undefined,
+                        attributes: {
+                            // Include phone as attribute in Keycloak if provided
+                            ...(data.phone !== undefined ? { phoneNumber: [data.phone] } : {})
+                        }
                     }
                 );
                 
@@ -245,14 +253,20 @@ routes.put("/:id", async function(req: Request, res: Response, _next: NextFuncti
                 }
             }
         }
+          // Remove password from data before updating in database
+        const { password, firstName, lastName, ...userData } = data;
         
-        // Remove password from data before updating in database
-        const { password,firstName,lastName, ...userData } = data;
+        // Make sure phone is included in the update if provided
+        const updateData = {
+            ...userData,
+            // If phone was explicitly provided (even as empty string), use it
+            ...(data.phone !== undefined ? { phone: data.phone } : {})
+        };
         
         // Update user in local database
         const user = await prisma.user.update({
             where: { id },
-            data: userData
+            data: updateData
         });
         
         res.status(200).json(user);

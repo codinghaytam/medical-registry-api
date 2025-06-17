@@ -3,6 +3,7 @@ import { PrismaClient, Medecin, Profession, User, Role } from '@prisma/client';
 import KcAdminClient from '@keycloak/keycloak-admin-client';
 import * as dotenv from "dotenv";
 import { connectToKeycloak } from '../utils/keycloak.js';
+import { validatePhone } from '../utils/validation.js';
 
 dotenv.config();
 
@@ -17,13 +18,14 @@ interface MedecinRequestBody {
   email: string;
   profession: string;
   isSpecialiste: boolean;
-  pwd:string;
+  pwd: string;
+  phone?: string;
 }
 
 // Helper function to get Keycloak user info
 
 // POST create a new medic
-router.post('/', async function(req: Request<{}, {}, MedecinRequestBody>, res: Response, _next: NextFunction): Promise<any> {
+router.post('/', validatePhone, async function(req: Request<{}, {}, MedecinRequestBody>, res: Response, _next: NextFunction): Promise<any> {
   try {
     // Validate profession
     if (!(req.body.profession in Profession)) {
@@ -44,7 +46,11 @@ router.post('/', async function(req: Request<{}, {}, MedecinRequestBody>, res: R
           value: req.body.pwd,
           temporary: false
         }
-      ]
+      ],
+      attributes: {
+        // Include phone number as an attribute if provided
+        ...(req.body.phone ? { phoneNumber: [req.body.phone] } : {})
+      }
     });
 
     // Create user in database
@@ -54,6 +60,8 @@ router.post('/', async function(req: Request<{}, {}, MedecinRequestBody>, res: R
         name: req.body.firstName + " " + req.body.lastName,
         email: req.body.email,
         role: Role.MEDECIN,
+        // @ts-ignore - phone field exists in the schema but might not be recognized by the TypeScript compiler
+        phone: req.body.phone || "",
       }
     });
 
@@ -158,7 +166,7 @@ router.get('/email/:email', async function(req: Request, res: Response, _next: N
 
 
 // POST a new medecin
-router.post('/', async function(req: Request<{}, {}, MedecinRequestBody>, res: Response, _next: NextFunction):Promise<any> {
+router.post('/', validatePhone, async function(req: Request<{}, {}, MedecinRequestBody>, res: Response, _next: NextFunction):Promise<any> {
   try {
     if(!(req.body.profession in Profession)) {
       return res.status(400).send("invalid profession");
@@ -181,7 +189,9 @@ router.post('/', async function(req: Request<{}, {}, MedecinRequestBody>, res: R
         email: req.body.email,
         username: req.body.username,
         name: req.body.firstName + " " + req.body.lastName,
-        role: 'MEDECIN' as Role
+        role: 'MEDECIN' as Role,
+        // @ts-ignore - phone field exists in the schema but might not be recognized by the TypeScript compiler
+        phone: req.body.phone || "",
       }
     });
 
@@ -206,7 +216,7 @@ router.post('/', async function(req: Request<{}, {}, MedecinRequestBody>, res: R
 });
 
 // PUT to update a specific medecin
-router.put('/:id', async function(req: Request<{id: string}, {}, Partial<MedecinRequestBody>>, res: Response, _next: NextFunction):Promise<any> {
+router.put('/:id', validatePhone, async function(req: Request<{id: string}, {}, Partial<MedecinRequestBody>>, res: Response, _next: NextFunction):Promise<any> {
   try {
     if(req.body.profession && !(req.body.profession in Profession)) {
       return res.status(400).send("invalid profession");
@@ -237,7 +247,9 @@ router.put('/:id', async function(req: Request<{id: string}, {}, Partial<Medecin
       data: {
         email: req.body.email,
         username: req.body.username,
-        name: req.body.firstName && req.body.lastName ? `${req.body.firstName} ${req.body.lastName}` : medecin.user.name
+        name: req.body.firstName && req.body.lastName ? `${req.body.firstName} ${req.body.lastName}` : medecin.user.name,
+        // Only include phone if it was provided in the request
+        ...(req.body.phone !== undefined ? { phone: req.body.phone } : {})
       }
     });
 

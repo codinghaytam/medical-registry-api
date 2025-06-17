@@ -3,6 +3,7 @@
 import express, { Request, Response, NextFunction, Router } from 'express';
 import { PrismaClient, Etudiant, User, Role } from '@prisma/client';
 import { connectToKeycloak } from '../utils/keycloak.js';
+import { validatePhone } from '../utils/validation.js';
 import KcAdminClient from '@keycloak/keycloak-admin-client';
 const router: Router = express.Router();
 const prisma = new PrismaClient();
@@ -14,6 +15,7 @@ interface EtudiantRequestBody {
   email: string;
   niveau: string;
   pwd: string;
+  phone?: string;
 }
 
 router.get('/', async function(_req: Request, res: Response, _next: NextFunction) {
@@ -65,7 +67,7 @@ router.get('/:id', async function(req: Request<{id: string}>, res: Response, _ne
   }
 });
 
-router.post('/', async function(req: Request<{}, {}, EtudiantRequestBody>, res: Response, _next: NextFunction) {
+router.post('/', validatePhone, async function(req: Request<{}, {}, EtudiantRequestBody>, res: Response, _next: NextFunction) {
   try {
     const kcAdminClient = await connectToKeycloak();
     const kcUser = await kcAdminClient.users.create({
@@ -80,7 +82,11 @@ router.post('/', async function(req: Request<{}, {}, EtudiantRequestBody>, res: 
           value: req.body.pwd,
           temporary: false
         }
-      ]
+      ],
+      attributes: {
+        // Include phone number as an attribute if provided
+        ...(req.body.phone ? { phoneNumber: [req.body.phone] } : {})
+      }
     });
     // Create user first
     const user = await prisma.user.create({
@@ -89,6 +95,8 @@ router.post('/', async function(req: Request<{}, {}, EtudiantRequestBody>, res: 
         email: req.body.email,
         name: `${req.body.firstName} ${req.body.lastName}`,
         role: Role.ETUDIANT,
+        // @ts-ignore - phone field exists in the schema but might not be recognized by the TypeScript compiler
+        phone: req.body.phone || "",
       }
     });
 
@@ -108,7 +116,7 @@ router.post('/', async function(req: Request<{}, {}, EtudiantRequestBody>, res: 
   }
 });
 
-router.put('/:id', async function(req: Request<{id: string}, {}, Partial<EtudiantRequestBody>>, res: Response, _next: NextFunction) {
+router.put('/:id', validatePhone, async function(req: Request<{id: string}, {}, Partial<EtudiantRequestBody>>, res: Response, _next: NextFunction) {
   try {
     // Get the existing etudiant and user
     const etudiant = await prisma.etudiant.findUnique({
@@ -149,21 +157,28 @@ router.put('/:id', async function(req: Request<{id: string}, {}, Partial<Etudian
       });
     }
 
-    // Update Prisma records
+    // Update Prisma records - first update the User
+    const updatedUser = await prisma.user.update({
+      where: { id: etudiant.user.id },
+      data: {
+        username: req.body.username || etudiant.user.username,
+        email: req.body.email || etudiant.user.email,
+        name: req.body.firstName && req.body.lastName
+          ? `${req.body.firstName} ${req.body.lastName}`
+          : etudiant.user.name,
+        // Only include phone if it was provided in the request
+        ...(req.body.phone !== undefined ? { phone: req.body.phone } : {})
+      }
+    });
+    
+    // Then update the Etudiant
     const updatedEtudiant = await prisma.etudiant.update({
       where: { id: etudiant.id },
       data: {
-        ...req.body,
         niveau: req.body.niveau ? parseInt(req.body.niveau) : undefined
       },
       include: {
-        user: {
-          select: {
-            username: true,
-            email: true,
-            name: true
-          }
-        }
+        user: true
       }
     });
 

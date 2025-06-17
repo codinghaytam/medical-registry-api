@@ -66,6 +66,7 @@ model User {
   username String
   email    String    @unique
   name     String
+  phone    String    @default("")
   role     Role
   medecin  Medecin?
   etudiant Etudiant?
