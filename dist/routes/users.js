@@ -2,6 +2,7 @@ import express from 'express';
 import { PrismaClient, Role } from "@prisma/client";
 import * as dotenv from "dotenv";
 import { connectToKeycloak, safeKeycloakConnect } from '../utils/keycloak.js';
+import { validatePhone } from '../utils/validation.js';
 dotenv.config();
 let kcAdminClient;
 const routes = express.Router();
@@ -125,7 +126,7 @@ routes.get("/email/:email", async function (req, res, _next) {
     }
 });
 // Create new user
-routes.post("/", async function (req, res, _next) {
+routes.post("/", validatePhone, async function (req, res, _next) {
     try {
         const data = req.body;
         if (!data.password) {
@@ -145,16 +146,21 @@ routes.post("/", async function (req, res, _next) {
             lastName: data.name ? data.name.split(' ').slice(1).join(' ') : '',
             enabled: true,
             credentials: [{ type: 'password', value: data.password, temporary: false }],
+            attributes: {
+                // Include phone number as an attribute if provided
+                ...(data.phone ? { phoneNumber: [data.phone] } : {})
+            }
         });
         // Remove password from data before storing in database
-        const { password, ...userData } = data;
-        // Create user in local database
+        const { password, ...userData } = data; // Create user in local database
         const user = await prisma.user.create({
             data: {
                 username: req.body.username,
                 name: req.body.firstName + " " + req.body.lastName,
                 email: req.body.email,
                 role: data.role,
+                // @ts-ignore - phone field exists in the schema but might not be recognized by the TypeScript compiler
+                phone: req.body.phone || "",
             }
         });
         res.status(201).json(user);
@@ -168,7 +174,7 @@ routes.post("/", async function (req, res, _next) {
     }
 });
 // Update user
-routes.put("/:id", async function (req, res, _next) {
+routes.put("/:id", validatePhone, async function (req, res, _next) {
     try {
         const { id } = req.params;
         if (!id) {
@@ -181,7 +187,7 @@ routes.put("/:id", async function (req, res, _next) {
         }
         // Get current user
         const currentUser = await prisma.user.findUnique({
-            where: { id }
+            where: { id: id }
         });
         if (!currentUser) {
             res.status(404).json({ error: "User not found" });
@@ -197,7 +203,11 @@ routes.put("/:id", async function (req, res, _next) {
                     email: data.email || currentUser.email,
                     username: data.username || currentUser.username,
                     firstName: data.name ? data.name.split(' ')[0] : undefined,
-                    lastName: data.name ? data.name.split(' ').slice(1).join(' ') : undefined
+                    lastName: data.name ? data.name.split(' ').slice(1).join(' ') : undefined,
+                    attributes: {
+                        // Include phone as attribute in Keycloak if provided
+                        ...(data.phone !== undefined ? { phoneNumber: [data.phone] } : {})
+                    }
                 });
                 // Update password if provided
                 if (data.password) {
@@ -213,11 +223,16 @@ routes.put("/:id", async function (req, res, _next) {
             }
         }
         // Remove password from data before updating in database
-        const { password, ...userData } = data;
+        const { password, firstName, lastName, ...userData } = data;
+        // Make sure phone is included in the update if provided
+        const updateData = {
+            ...data,
+            // If phone was explicitly provided (even as empty string), use it
+        };
         // Update user in local database
         const user = await prisma.user.update({
             where: { id },
-            data: userData
+            data: updateData
         });
         res.status(200).json(user);
     }

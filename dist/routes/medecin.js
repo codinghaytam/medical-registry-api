@@ -2,13 +2,14 @@ import express from 'express';
 import { PrismaClient, Profession, Role } from '@prisma/client';
 import * as dotenv from "dotenv";
 import { connectToKeycloak } from '../utils/keycloak.js';
+import { validatePhone } from '../utils/validation.js';
 dotenv.config();
 let kcAdminClient;
 const router = express.Router();
 const prisma = new PrismaClient();
 // Helper function to get Keycloak user info
 // POST create a new medic
-router.post('/', async function (req, res, _next) {
+router.post('/', validatePhone, async function (req, res, _next) {
     try {
         // Validate profession
         if (!(req.body.profession in Profession)) {
@@ -28,7 +29,11 @@ router.post('/', async function (req, res, _next) {
                     value: req.body.pwd,
                     temporary: false
                 }
-            ]
+            ],
+            attributes: {
+                // Include phone number as an attribute if provided
+                ...(req.body.phone ? { phoneNumber: [req.body.phone] } : {})
+            }
         });
         // Create user in database
         const user = await prisma.user.create({
@@ -37,6 +42,8 @@ router.post('/', async function (req, res, _next) {
                 name: req.body.firstName + " " + req.body.lastName,
                 email: req.body.email,
                 role: Role.MEDECIN,
+                // @ts-ignore - phone field exists in the schema but might not be recognized by the TypeScript compiler
+                phone: req.body.phone || "",
             }
         });
         // Create medic
@@ -142,7 +149,7 @@ router.get('/email/:email', async function (req, res, _next) {
     }
 });
 // POST a new medecin
-router.post('/', async function (req, res, _next) {
+router.post('/', validatePhone, async function (req, res, _next) {
     try {
         if (!(req.body.profession in Profession)) {
             return res.status(400).send("invalid profession");
@@ -163,7 +170,9 @@ router.post('/', async function (req, res, _next) {
                 email: req.body.email,
                 username: req.body.username,
                 name: req.body.firstName + " " + req.body.lastName,
-                role: 'MEDECIN'
+                role: 'MEDECIN',
+                // @ts-ignore - phone field exists in the schema but might not be recognized by the TypeScript compiler
+                phone: req.body.phone || "",
             }
         });
         const newMedecin = await prisma.medecin.create({
@@ -187,7 +196,7 @@ router.post('/', async function (req, res, _next) {
     }
 });
 // PUT to update a specific medecin
-router.put('/:id', async function (req, res, _next) {
+router.put('/:id', validatePhone, async function (req, res, _next) {
     try {
         if (req.body.profession && !(req.body.profession in Profession)) {
             return res.status(400).send("invalid profession");
@@ -210,11 +219,14 @@ router.put('/:id', async function (req, res, _next) {
             where: { id: medecin.userId },
             data: {
                 email: req.body.email,
-                username: req.body.username
+                username: req.body.username,
+                name: req.body.firstName && req.body.lastName ? `${req.body.firstName} ${req.body.lastName}` : medecin.user.name,
+                // Only include phone if it was provided in the request
+                ...(req.body.phone !== undefined ? { phone: req.body.phone } : {})
             }
         });
         const updatedMedecin = await prisma.medecin.update({
-            where: { id: req.params.id },
+            where: { id: medecin.id },
             data: {
                 profession: req.body.profession,
                 isSpecialiste: req.body.isSpecialiste

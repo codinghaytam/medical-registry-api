@@ -2,6 +2,7 @@
 import express from 'express';
 import { PrismaClient, Role } from '@prisma/client';
 import { connectToKeycloak } from '../utils/keycloak.js';
+import { validatePhone } from '../utils/validation.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 router.get('/', async function (_req, res, _next) {
@@ -55,7 +56,7 @@ router.get('/:id', async function (req, res, _next) {
         await prisma.$disconnect();
     }
 });
-router.post('/', async function (req, res, _next) {
+router.post('/', validatePhone, async function (req, res, _next) {
     try {
         const kcAdminClient = await connectToKeycloak();
         const kcUser = await kcAdminClient.users.create({
@@ -70,7 +71,11 @@ router.post('/', async function (req, res, _next) {
                     value: req.body.pwd,
                     temporary: false
                 }
-            ]
+            ],
+            attributes: {
+                // Include phone number as an attribute if provided
+                ...(req.body.phone ? { phoneNumber: [req.body.phone] } : {})
+            }
         });
         // Create user first
         const user = await prisma.user.create({
@@ -79,6 +84,8 @@ router.post('/', async function (req, res, _next) {
                 email: req.body.email,
                 name: `${req.body.firstName} ${req.body.lastName}`,
                 role: Role.ETUDIANT,
+                // @ts-ignore - phone field exists in the schema but might not be recognized by the TypeScript compiler
+                phone: req.body.phone || "",
             }
         });
         // Create etudiant and link to user
@@ -98,7 +105,7 @@ router.post('/', async function (req, res, _next) {
         await prisma.$disconnect();
     }
 });
-router.put('/:id', async function (req, res, _next) {
+router.put('/:id', validatePhone, async function (req, res, _next) {
     try {
         // Get the existing etudiant and user
         const etudiant = await prisma.etudiant.findUnique({
@@ -131,21 +138,27 @@ router.put('/:id', async function (req, res, _next) {
                 }
             });
         }
-        // Update Prisma records
-        const updatedEtudiant = await prisma.etudiant.update({
-            where: { id: req.params.id },
+        // Update Prisma records - first update the User
+        const updatedUser = await prisma.user.update({
+            where: { id: etudiant.user.id },
             data: {
-                ...req.body,
+                username: req.body.username || etudiant.user.username,
+                email: req.body.email || etudiant.user.email,
+                name: req.body.firstName && req.body.lastName
+                    ? `${req.body.firstName} ${req.body.lastName}`
+                    : etudiant.user.name,
+                // Only include phone if it was provided in the request
+                ...(req.body.phone !== undefined ? { phone: req.body.phone } : {})
+            }
+        });
+        // Then update the Etudiant
+        const updatedEtudiant = await prisma.etudiant.update({
+            where: { id: etudiant.id },
+            data: {
                 niveau: req.body.niveau ? parseInt(req.body.niveau) : undefined
             },
             include: {
-                user: {
-                    select: {
-                        username: true,
-                        email: true,
-                        name: true
-                    }
-                }
+                user: true
             }
         });
         res.status(200).json({
