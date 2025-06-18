@@ -231,8 +231,8 @@ routes.put("/:id", validatePhone, async function(req: Request, res: Response, _n
                     { 
                         email: data.email || currentUser.email, 
                         username: data.username || currentUser.username,
-                        firstName: data.name ? data.name.split(' ')[0] : undefined,
-                        lastName: data.name ? data.name.split(' ').slice(1).join(' ') : undefined,
+                        firstName: data.firstName ? data.firstName : currentUser.name.split(' ')[0],
+                        lastName: data.lastName ? data.lastName : currentUser.name.split(' ').slice(1).join(' '),
                         attributes: {
                             // Include phone as attribute in Keycloak if provided
                             ...(data.phone !== undefined ? { phoneNumber: [data.phone] } : {})
