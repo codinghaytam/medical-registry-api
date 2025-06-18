@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction, response } from 'express';
 import { PrismaClient, Seance, Medecin, Patient, SeanceType, Profession } from '@prisma/client';
-import { connectToKeycloak } from '../utils/keycloak.js';
+import { connectToKeycloak, validateKeycloakToken } from '../utils/keycloak.js';
 import KcAdminClient from '@keycloak/keycloak-admin-client';
 
 const router = express.Router();
@@ -66,7 +66,7 @@ async function validateSeanceTypeWithMedecinProfession(type: SeanceType, medecin
 }
 
 // GET all seances
-router.get('/', async function(_req: Request, res: Response, _next: NextFunction) {
+router.get('/', validateKeycloakToken, async function(_req: Request, res: Response, _next: NextFunction) {
   try {
     const seances = await prisma.seance.findMany({
       include: {
@@ -103,7 +103,7 @@ router.get('/', async function(_req: Request, res: Response, _next: NextFunction
 });
 
 // GET a specific seance
-router.get('/:id', async function(req: Request, res: Response, _next: NextFunction) {
+router.get('/:id', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction) {
   try {
     const seance: SeanceWithRelations | null = await prisma.seance.findUnique({
       where: { id: req.params.id },
@@ -139,7 +139,7 @@ router.get('/:id', async function(req: Request, res: Response, _next: NextFuncti
 });
 
 // POST a new seance
-router.post('/', async function(req: Request<{}, {}, SeanceRequestBody>, res: Response, _next: NextFunction) {
+router.post('/', validateKeycloakToken, async function(req: Request<{}, {}, SeanceRequestBody>, res: Response, _next: NextFunction) {
   try {
     // Validate seance type and medecin profession compatibility
     const validationResult = await validateSeanceTypeWithMedecinProfession(
@@ -192,7 +192,7 @@ router.post('/', async function(req: Request<{}, {}, SeanceRequestBody>, res: Re
 });
 
 // PUT to update a specific seance
-router.put('/:id', async function(req: Request<{id: string}, {}, Partial<SeanceRequestBody>>, res: Response, _next: NextFunction) {
+router.put('/:id', validateKeycloakToken, async function(req: Request<{id: string}, {}, Partial<SeanceRequestBody>>, res: Response, _next: NextFunction) {
   try {
     // If both type and medecinId are being updated, validate them together
     if (req.body.type && req.body.medecinId) {
@@ -283,7 +283,7 @@ router.put('/:id', async function(req: Request<{id: string}, {}, Partial<SeanceR
 });
 
 // DELETE a specific seance
-router.delete('/:id', async function(req: Request, res: Response, _next: NextFunction) {
+router.delete('/:id', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction) {
   try {
     await prisma.seance.delete({
       where: { id: req.params.id }

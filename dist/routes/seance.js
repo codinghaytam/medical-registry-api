@@ -1,6 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { connectToKeycloak } from '../utils/keycloak.js';
+import { connectToKeycloak, validateKeycloakToken } from '../utils/keycloak.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 let kcAdminClient;
@@ -47,7 +47,7 @@ async function validateSeanceTypeWithMedecinProfession(type, medecinId) {
     }
 }
 // GET all seances
-router.get('/', async function (_req, res, _next) {
+router.get('/', validateKeycloakToken, async function (_req, res, _next) {
     try {
         const seances = await prisma.seance.findMany({
             include: {
@@ -83,7 +83,7 @@ router.get('/', async function (_req, res, _next) {
     }
 });
 // GET a specific seance
-router.get('/:id', async function (req, res, _next) {
+router.get('/:id', validateKeycloakToken, async function (req, res, _next) {
     try {
         const seance = await prisma.seance.findUnique({
             where: { id: req.params.id },
@@ -121,7 +121,7 @@ router.get('/:id', async function (req, res, _next) {
     }
 });
 // POST a new seance
-router.post('/', async function (req, res, _next) {
+router.post('/', validateKeycloakToken, async function (req, res, _next) {
     try {
         // Validate seance type and medecin profession compatibility
         const validationResult = await validateSeanceTypeWithMedecinProfession(req.body.type, req.body.medecinId);
@@ -167,7 +167,7 @@ router.post('/', async function (req, res, _next) {
     }
 });
 // PUT to update a specific seance
-router.put('/:id', async function (req, res, _next) {
+router.put('/:id', validateKeycloakToken, async function (req, res, _next) {
     try {
         // If both type and medecinId are being updated, validate them together
         if (req.body.type && req.body.medecinId) {
@@ -240,7 +240,7 @@ router.put('/:id', async function (req, res, _next) {
     }
 });
 // DELETE a specific seance
-router.delete('/:id', async function (req, res, _next) {
+router.delete('/:id', validateKeycloakToken, async function (req, res, _next) {
     try {
         await prisma.seance.delete({
             where: { id: req.params.id }

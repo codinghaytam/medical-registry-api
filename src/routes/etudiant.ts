@@ -2,7 +2,7 @@
 
 import express, { Request, Response, NextFunction, Router } from 'express';
 import { PrismaClient, Etudiant, User, Role } from '@prisma/client';
-import { connectToKeycloak } from '../utils/keycloak.js';
+import { connectToKeycloak, validateKeycloakToken } from '../utils/keycloak.js';
 import { validatePhone } from '../utils/validation.js';
 import KcAdminClient from '@keycloak/keycloak-admin-client';
 const router: Router = express.Router();
@@ -18,7 +18,7 @@ interface EtudiantRequestBody {
   phone?: string;
 }
 
-router.get('/', async function(_req: Request, res: Response, _next: NextFunction) {
+router.get('/', validateKeycloakToken, async function(_req: Request, res: Response, _next: NextFunction) {
   try {
     const etudiants = await prisma.etudiant.findMany({
       include: {
@@ -40,7 +40,7 @@ router.get('/', async function(_req: Request, res: Response, _next: NextFunction
   }
 });
 
-router.get('/:id', async function(req: Request<{id: string}>, res: Response, _next: NextFunction) {
+router.get('/:id', validateKeycloakToken, async function(req: Request<{id: string}>, res: Response, _next: NextFunction) {
   try {
     const etudiant = await prisma.etudiant.findUnique({
       where: { id: req.params.id },
@@ -67,7 +67,7 @@ router.get('/:id', async function(req: Request<{id: string}>, res: Response, _ne
   }
 });
 
-router.post('/', validatePhone, async function(req: Request<{}, {}, EtudiantRequestBody>, res: Response, _next: NextFunction) {
+router.post('/', validateKeycloakToken, validatePhone, async function(req: Request<{}, {}, EtudiantRequestBody>, res: Response, _next: NextFunction) {
   try {
     const kcAdminClient = await connectToKeycloak();
     const kcUser = await kcAdminClient.users.create({
@@ -116,7 +116,7 @@ router.post('/', validatePhone, async function(req: Request<{}, {}, EtudiantRequ
   }
 });
 
-router.put('/:id', validatePhone, async function(req: Request<{id: string}, {}, Partial<EtudiantRequestBody>>, res: Response, _next: NextFunction) {
+router.put('/:id', validateKeycloakToken, validatePhone, async function(req: Request<{id: string}, {}, Partial<EtudiantRequestBody>>, res: Response, _next: NextFunction) {
   try {
     // Get the existing etudiant and user
     const etudiant = await prisma.etudiant.findUnique({
@@ -192,7 +192,7 @@ router.put('/:id', validatePhone, async function(req: Request<{id: string}, {}, 
   }
 });
 
-router.delete('/:id', async function(req: Request<{id: string}>, res: Response, _next: NextFunction) {
+router.delete('/:id', validateKeycloakToken, async function(req: Request<{id: string}>, res: Response, _next: NextFunction) {
   try {
     // First get the etudiant and user
     const etudiant = await prisma.etudiant.findUnique({

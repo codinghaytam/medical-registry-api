@@ -1,9 +1,10 @@
 import express from 'express';
 import { PrismaClient, ActionType } from '@prisma/client';
+import { validateKeycloakToken } from '../utils/keycloak.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 // GET all actions
-router.get('/', async function (_req, res, _next) {
+router.get('/', validateKeycloakToken, async function (_req, res, _next) {
     try {
         const actions = await prisma.action.findMany();
         res.status(200).send(actions);
@@ -17,7 +18,7 @@ router.get('/', async function (_req, res, _next) {
     }
 });
 // GET a specific action
-router.get('/:id', async function (req, res, _next) {
+router.get('/:id', validateKeycloakToken, async function (req, res, _next) {
     try {
         const action = await prisma.action.findUnique({
             where: { id: req.params.id }
@@ -38,7 +39,7 @@ router.get('/:id', async function (req, res, _next) {
     }
 });
 // POST a new action
-router.post('/', async function (req, res, _next) {
+router.post('/', validateKeycloakToken, async function (req, res, _next) {
     try {
         const newAction = await prisma.action.create({
             data: req.body
@@ -54,7 +55,7 @@ router.post('/', async function (req, res, _next) {
     }
 });
 // PUT to update a specific action
-router.put('/:id', async function (req, res, _next) {
+router.put('/:id', validateKeycloakToken, async function (req, res, _next) {
     try {
         const updatedAction = await prisma.action.update({
             where: { id: req.params.id },
@@ -71,7 +72,7 @@ router.put('/:id', async function (req, res, _next) {
     }
 });
 // DELETE a specific action
-router.delete('/:id', async function (req, res, _next) {
+router.delete('/:id', validateKeycloakToken, async function (req, res, _next) {
     try {
         await prisma.action.delete({
             where: { id: req.params.id }
@@ -87,7 +88,7 @@ router.delete('/:id', async function (req, res, _next) {
     }
 });
 // PUT to validate a TRANSFER_ORTHO action
-router.put('/validate-transfer-ortho/:id', async function (req, res, _next) {
+router.put('/validate-transfer-ortho/:id', validateKeycloakToken, async function (req, res, _next) {
     try {
         // Get the action and validate it's a TRANSFER_ORTHO type
         const action = await prisma.action.findUnique({

@@ -1,15 +1,14 @@
 import express, { Request, Response, NextFunction } from 'express';
 import KcAdminClient from '@keycloak/keycloak-admin-client';
 import * as dotenv from "dotenv";
-import { connectToKeycloak, safeKeycloakConnect, getUserByEmail } from '../utils/keycloak.js';
+import { connectToKeycloak, safeKeycloakConnect, getUserByEmail, validateKeycloakToken } from '../utils/keycloak.js';
 import { PrismaClient, User, Role } from '@prisma/client';
+
 
 dotenv.config();
 
 const router = express.Router();
 const prisma = new PrismaClient();
-let kcAdminClient: KcAdminClient;
-
 // Helper function to get Keycloak user info
 async function getKeycloakUserInfo(userId: string) {
   try {
@@ -33,7 +32,7 @@ interface AdminRequestBody {
 }
 
 /* GET admins listing. */
-router.get('/', async function(_req: Request, res: Response) {
+router.get('/', validateKeycloakToken, async function(_req: Request, res: Response) {
   try {
     // Get admin users from database
     const adminUsers = await prisma.user.findMany({
@@ -68,7 +67,7 @@ router.get('/', async function(_req: Request, res: Response) {
 });
 
 // Get admin by email route
-router.get('/email/:email', async function(req: Request, res: Response, _next: NextFunction): Promise<any> {
+router.get('/email/:email', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction): Promise<any> {
   try {
     // Find admin user in database
     const dbUser = await prisma.user.findFirst({
@@ -98,7 +97,7 @@ router.get('/email/:email', async function(req: Request, res: Response, _next: N
   }
 });
 
-router.get('/:id', async function(req: Request, res: Response, _next: NextFunction): Promise<any> {
+router.get('/:id', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction): Promise<any> {
   try {
     // First check if this is a Keycloak ID
     const keycloakUser = await getKeycloakUserInfo(req.params.id);
@@ -148,7 +147,7 @@ router.get('/:id', async function(req: Request, res: Response, _next: NextFuncti
   }
 });
 
-router.post('/', async function(req: Request<{}, {}, AdminRequestBody>, res: Response) {
+router.post('/', validateKeycloakToken, async function(req: Request<{}, {}, AdminRequestBody>, res: Response) {
   try {
     // Connect to Keycloak
     const kc = await safeKeycloakConnect(res);
@@ -210,7 +209,7 @@ router.post('/', async function(req: Request<{}, {}, AdminRequestBody>, res: Res
   }
 });
 
-router.put('/:id', async function(req: Request<{id: string}, {}, Partial<AdminRequestBody>>, res: Response): Promise<any> {
+router.put('/:id', validateKeycloakToken, async function(req: Request<{id: string}, {}, Partial<AdminRequestBody>>, res: Response): Promise<any> {
   try {
     // First check if the admin exists in our database
     const dbUser = await prisma.user.findFirst({
@@ -285,7 +284,7 @@ router.put('/:id', async function(req: Request<{id: string}, {}, Partial<AdminRe
   }
 });
 
-router.delete('/:id', async function(req: Request, res: Response): Promise<any> {
+router.delete('/:id', validateKeycloakToken, async function(req: Request, res: Response): Promise<any> {
   try {
     // Find the admin in our database
     const dbUser = await prisma.user.findFirst({

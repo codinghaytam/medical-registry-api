@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { PrismaClient, Role } from "@prisma/client";
 import KcAdminClient from '@keycloak/keycloak-admin-client';
 import * as dotenv from "dotenv";
-import { connectToKeycloak, safeKeycloakConnect } from '../utils/keycloak.js';
+import { connectToKeycloak, safeKeycloakConnect, validateKeycloakToken } from '../utils/keycloak.js';
 import { validatePhone } from '../utils/validation.js';
 
 dotenv.config()
@@ -35,7 +35,7 @@ interface UserRequestBody {
 }
 
 // Get all users
-routes.get("/", async function(_req: Request, res: Response, _next: NextFunction) {
+routes.get("/", validateKeycloakToken, async function(_req: Request, res: Response, _next: NextFunction) {
     try {
         const users = await prisma.user.findMany();
         if (!Array.isArray(users)) {
@@ -51,7 +51,7 @@ routes.get("/", async function(_req: Request, res: Response, _next: NextFunction
 });
 
 // Get users by role
-routes.get("/role/:role", async function(req: Request, res: Response, _next: NextFunction) {
+routes.get("/role/:role", validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction) {
     try {
         const { role } = req.params;
         
@@ -73,7 +73,7 @@ routes.get("/role/:role", async function(req: Request, res: Response, _next: Nex
 });
 
 // GET all medecins
-routes.get('/medecins', async function(_req: Request, res: Response) {
+routes.get('/medecins', validateKeycloakToken, async function(_req: Request, res: Response) {
   try {
     const medecins = await prisma.medecin.findMany();
     if (!Array.isArray(medecins)) {
@@ -95,7 +95,7 @@ routes.get('/medecins', async function(_req: Request, res: Response) {
 });
 
 // Get user by ID
-routes.get("/:id", async function(req: Request, res: Response, _next: NextFunction) {
+routes.get("/:id", validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction) {
     try {
         const { id } = req.params;
         if (!id) {
@@ -120,7 +120,7 @@ routes.get("/:id", async function(req: Request, res: Response, _next: NextFuncti
 });
 
 // Get user by email
-routes.get("/email/:email", async function(req: Request, res: Response, _next: NextFunction) {
+routes.get("/email/:email", validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction) {
     try {
         const { email } = req.params;
         if (!email) {
@@ -145,7 +145,7 @@ routes.get("/email/:email", async function(req: Request, res: Response, _next: N
 });
 
 // Create new user
-routes.post("/", validatePhone, async function(req: Request, res: Response, _next: NextFunction) {
+routes.post("/", validateKeycloakToken, validatePhone, async function(req: Request, res: Response, _next: NextFunction) {
     try {
         const data = req.body;
         
@@ -196,7 +196,7 @@ routes.post("/", validatePhone, async function(req: Request, res: Response, _nex
 });
 
 // Update user
-routes.put("/:id", validatePhone, async function(req: Request, res: Response, _next: NextFunction) {
+routes.put("/:id", validateKeycloakToken, validatePhone, async function(req: Request, res: Response, _next: NextFunction) {
     try {
         const { id } = req.params;
         if (!id) {
@@ -278,7 +278,7 @@ routes.put("/:id", validatePhone, async function(req: Request, res: Response, _n
 });
 
 // Delete user
-routes.delete("/:id", async function(req: Request, res: Response, _next: NextFunction) {
+routes.delete("/:id", validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction) {
     try {
         const { id } = req.params;
         if (!id) {

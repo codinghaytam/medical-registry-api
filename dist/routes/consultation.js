@@ -1,12 +1,13 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import * as dotenv from "dotenv";
+import { validateKeycloakToken } from '../utils/keycloak.js';
 dotenv.config();
 let kcAdminClient;
 const router = express.Router();
 const prisma = new PrismaClient();
 // GET all consultations
-router.get('/', async function (_req, res, _next) {
+router.get('/', validateKeycloakToken, async function (_req, res, _next) {
     try {
         const consultations = await prisma.consultation.findMany({
             include: {
@@ -42,7 +43,7 @@ router.get('/', async function (_req, res, _next) {
     }
 });
 // GET a specific consultation
-router.get('/:id', async function (req, res, _next) {
+router.get('/:id', validateKeycloakToken, async function (req, res, _next) {
     try {
         const consultation = await prisma.consultation.findUnique({
             where: { id: req.params.id },
@@ -80,7 +81,7 @@ router.get('/:id', async function (req, res, _next) {
     }
 });
 // POST a new consultation
-router.post('/', async function (req, res, _next) {
+router.post('/', validateKeycloakToken, async function (req, res, _next) {
     try {
         // First check if the medecin exists
         const medecin = await prisma.medecin.findUnique({
@@ -133,7 +134,7 @@ router.post('/', async function (req, res, _next) {
     }
 });
 // Add new route for adding diagnosis to consultation
-router.post('/:id/diagnosis', async function (req, res) {
+router.post('/:id/diagnosis', validateKeycloakToken, async function (req, res) {
     try {
         // First check if both the medecin and consultation exist
         const medecin = await prisma.medecin.findUnique({
@@ -202,7 +203,7 @@ router.post('/:id/diagnosis', async function (req, res) {
     }
 });
 // PUT to update a specific consultation
-router.put('/:id', async function (req, res, _next) {
+router.put('/:id', validateKeycloakToken, async function (req, res, _next) {
     try {
         const updatedConsultation = await prisma.consultation.update({
             where: { id: req.params.id },
@@ -229,7 +230,7 @@ router.put('/:id', async function (req, res, _next) {
     }
 });
 // Add route for updating diagnosis
-router.put('/diagnosis/:diagnosisId', async function (req, res) {
+router.put('/diagnosis/:diagnosisId', validateKeycloakToken, async function (req, res) {
     try {
         const updatedDiagnosis = await prisma.diagnostique.update({
             where: { id: req.params.diagnosisId },
@@ -255,7 +256,7 @@ router.put('/diagnosis/:diagnosisId', async function (req, res) {
     }
 });
 // DELETE a specific consultation
-router.delete('/:id', async function (req, res) {
+router.delete('/:id', validateKeycloakToken, async function (req, res) {
     try {
         // Use transaction to ensure atomic operation
         await prisma.$transaction(async (tx) => {

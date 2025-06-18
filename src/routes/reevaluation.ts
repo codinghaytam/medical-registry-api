@@ -4,6 +4,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { deleteImageIfExists } from "../utils/upload.js";
+import { validateKeycloakToken } from "../utils/keycloak.js";
 
 const routes = express.Router();
 const prisma = new PrismaClient();
@@ -41,7 +42,7 @@ const upload = multer({
 const uploadSingleImage = upload.single('sondagePhoto');
 
 // Get all reevaluations
-routes.get("/", async function(_req: Request, res: Response, _next: NextFunction){
+routes.get("/", validateKeycloakToken, async function(_req: Request, res: Response, _next: NextFunction){
     try{
         const reevaluations = await prisma.reevaluation.findMany({
             include: {
@@ -80,7 +81,7 @@ routes.get("/", async function(_req: Request, res: Response, _next: NextFunction
 });
 
 // Get a single reevaluation by ID
-routes.get("/:id", async function(req: Request, res: Response, _next: NextFunction){
+routes.get("/:id", validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction){
     try {
          
         const reevaluation = await prisma.reevaluation.findUnique({
@@ -123,7 +124,7 @@ routes.get("/:id", async function(req: Request, res: Response, _next: NextFuncti
 });
 
 // Create a new reevaluation
-routes.post("/", uploadSingleImage, async function(req: Request, res: Response, _next: NextFunction){
+routes.post("/", validateKeycloakToken, uploadSingleImage, async function(req: Request, res: Response, _next: NextFunction){
     try {
         // Validate required fields
         
@@ -206,7 +207,7 @@ routes.post("/", uploadSingleImage, async function(req: Request, res: Response, 
 });
 
 // Update an existing reevaluation
-routes.put("/:id", uploadSingleImage, async function(req: Request, res: Response, _next: NextFunction){
+routes.put("/:id", validateKeycloakToken, uploadSingleImage, async function(req: Request, res: Response, _next: NextFunction){
     try {
         // Check if reevaluation exists
         const existingReevaluation = await prisma.reevaluation.findUnique({
@@ -276,7 +277,7 @@ routes.put("/:id", uploadSingleImage, async function(req: Request, res: Response
 });
 
 // Delete a reevaluation
-routes.delete("/:id", async function(req: Request, res: Response, _next: NextFunction){
+routes.delete("/:id", validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction){
     try {
         // Check if reevaluation exists
         const existingReevaluation = await prisma.reevaluation.findUnique({

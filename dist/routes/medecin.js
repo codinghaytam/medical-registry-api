@@ -1,7 +1,7 @@
 import express from 'express';
 import { PrismaClient, Profession, Role } from '@prisma/client';
 import * as dotenv from "dotenv";
-import { connectToKeycloak } from '../utils/keycloak.js';
+import { connectToKeycloak, validateKeycloakToken } from '../utils/keycloak.js';
 import { validatePhone } from '../utils/validation.js';
 dotenv.config();
 let kcAdminClient;
@@ -63,7 +63,7 @@ router.post('/', validatePhone, async function (req, res, _next) {
     }
 });
 // GET all medecins
-router.get('/', async function (_req, res, _next) {
+router.get('/', validateKeycloakToken, async function (_req, res, _next) {
     try {
         const medecins = await prisma.medecin.findMany({
             include: {
@@ -80,7 +80,7 @@ router.get('/', async function (_req, res, _next) {
         await prisma.$disconnect();
     }
 });
-router.get('/profession/:profession', async function (req, res, _next) {
+router.get('/profession/:profession', validateKeycloakToken, async function (req, res, _next) {
     try {
         if (req.params.profession in Profession) {
             const medecins = await prisma.medecin.findMany({
@@ -104,7 +104,7 @@ router.get('/profession/:profession', async function (req, res, _next) {
     }
 });
 // GET a specific medecin
-router.get('/:id', async function (req, res, _next) {
+router.get('/:id', validateKeycloakToken, async function (req, res, _next) {
     try {
         const medecin = await prisma.medecin.findUnique({
             where: { id: req.params.id },
@@ -125,7 +125,7 @@ router.get('/:id', async function (req, res, _next) {
         await prisma.$disconnect();
     }
 });
-router.get('/email/:email', async function (req, res, _next) {
+router.get('/email/:email', validateKeycloakToken, async function (req, res, _next) {
     try {
         const medecin = await prisma.medecin.findFirst({
             where: { user: {
@@ -149,7 +149,7 @@ router.get('/email/:email', async function (req, res, _next) {
     }
 });
 // POST a new medecin
-router.post('/', validatePhone, async function (req, res, _next) {
+router.post('/', validateKeycloakToken, validatePhone, async function (req, res, _next) {
     try {
         if (!(req.body.profession in Profession)) {
             return res.status(400).send("invalid profession");
@@ -196,7 +196,7 @@ router.post('/', validatePhone, async function (req, res, _next) {
     }
 });
 // PUT to update a specific medecin
-router.put('/:id', validatePhone, async function (req, res, _next) {
+router.put('/:id', validateKeycloakToken, validatePhone, async function (req, res, _next) {
     try {
         if (req.body.profession && !(req.body.profession in Profession)) {
             return res.status(400).send("invalid profession");
@@ -246,7 +246,7 @@ router.put('/:id', validatePhone, async function (req, res, _next) {
     }
 });
 // DELETE a specific medecin
-router.delete('/:id', async function (req, res, _next) {
+router.delete('/:id', validateKeycloakToken, async function (req, res, _next) {
     try {
         const medecin = await prisma.medecin.findUnique({
             where: { userId: req.params.id },

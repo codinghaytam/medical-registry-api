@@ -1,11 +1,12 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { PrismaClient, Action, ActionType } from '@prisma/client';
+import { validateKeycloakToken } from '../utils/keycloak.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // GET all actions
-router.get('/', async function(_req: Request, res: Response, _next: NextFunction) {
+router.get('/', validateKeycloakToken, async function(_req: Request, res: Response, _next: NextFunction) {
   try {
     const actions: Action[] = await prisma.action.findMany();
     res.status(200).send(actions);
@@ -18,7 +19,7 @@ router.get('/', async function(_req: Request, res: Response, _next: NextFunction
 });
 
 // GET a specific action
-router.get('/:id', async function(req: Request, res: Response, _next: NextFunction) {
+router.get('/:id', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction) {
   try {
     const action: Action | null = await prisma.action.findUnique({
       where: { id: req.params.id }
@@ -37,7 +38,7 @@ router.get('/:id', async function(req: Request, res: Response, _next: NextFuncti
 });
 
 // POST a new action
-router.post('/', async function(req: Request, res: Response, _next: NextFunction) {
+router.post('/', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction) {
   try {
     const newAction: Action = await prisma.action.create({
       data: req.body
@@ -52,7 +53,7 @@ router.post('/', async function(req: Request, res: Response, _next: NextFunction
 });
 
 // PUT to update a specific action
-router.put('/:id', async function(req: Request<{id: string}>, res: Response, _next: NextFunction) {
+router.put('/:id', validateKeycloakToken, async function(req: Request<{id: string}>, res: Response, _next: NextFunction) {
   try {
     const updatedAction: Action = await prisma.action.update({
       where: { id: req.params.id },
@@ -68,7 +69,7 @@ router.put('/:id', async function(req: Request<{id: string}>, res: Response, _ne
 });
 
 // DELETE a specific action
-router.delete('/:id', async function(req: Request, res: Response, _next: NextFunction) {
+router.delete('/:id', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction) {
   try {
     await prisma.action.delete({
       where: { id: req.params.id }
@@ -83,7 +84,7 @@ router.delete('/:id', async function(req: Request, res: Response, _next: NextFun
 });
 
 // PUT to validate a TRANSFER_ORTHO action
-router.put('/validate-transfer-ortho/:id', async function(req: Request, res: Response, _next: NextFunction) {
+router.put('/validate-transfer-ortho/:id', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction) {
   try {
     // Get the action and validate it's a TRANSFER_ORTHO type
     const action = await prisma.action.findUnique({

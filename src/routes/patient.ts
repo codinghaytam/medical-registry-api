@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { PrismaClient, Patient, MotifConsultation, HygieneBuccoDentaire, TypeMastication, Profession,ActionType } from '@prisma/client';
+import { validateKeycloakToken } from '../utils/keycloak.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -28,7 +29,7 @@ type RequestHandler<P extends ParamsDictionary = ParamsDictionary, ResBody = any
   (req: Request<P, ResBody, ReqBody>, res: Response, next: NextFunction) => void | Promise<void>;
 
 // GET all patients
-router.get('/', async function(_req: Request, res: Response, _next: NextFunction) {
+router.get('/', validateKeycloakToken, async function(_req: Request, res: Response, _next: NextFunction) {
   try {
     const patients: Patient[] = await prisma.patient.findMany();
     if (!Array.isArray(patients)) {
@@ -44,7 +45,7 @@ router.get('/', async function(_req: Request, res: Response, _next: NextFunction
 });
 
 // GET a specific patient
-router.get('/:id', async function(req: Request, res: Response, _next: NextFunction) {
+router.get('/:id', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction) {
   try {
     const patient: Patient | null = await prisma.patient.findUnique({
       where: { id: req.params.id }
@@ -63,7 +64,7 @@ router.get('/:id', async function(req: Request, res: Response, _next: NextFuncti
 });
 
 // POST a new patient
-router.post('/', async function(req: Request<{}, {}, PatientRequestBody>, res: Response, _next: NextFunction) {
+router.post('/', validateKeycloakToken, async function(req: Request<{}, {}, PatientRequestBody>, res: Response, _next: NextFunction) {
   try {
     const newPatient: Patient = await prisma.patient.create({
       data: {
@@ -83,7 +84,7 @@ router.post('/', async function(req: Request<{}, {}, PatientRequestBody>, res: R
 });
 
 // PUT to update a specific patient
-router.put('/:id', async function(req: Request<{id: string}, {}, Partial<PatientRequestBody>>, res: Response, _next: NextFunction) {
+router.put('/:id', validateKeycloakToken, async function(req: Request<{id: string}, {}, Partial<PatientRequestBody>>, res: Response, _next: NextFunction) {
   try {
     const updatedPatient: Patient = await prisma.patient.update({
       where: { id: req.params.id },
@@ -104,7 +105,7 @@ router.put('/:id', async function(req: Request<{id: string}, {}, Partial<Patient
 });
 
 // DELETE a specific patient
-router.delete('/:id', async function(req: Request, res: Response, _next: NextFunction) {
+router.delete('/:id', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction) {
   try {
     await prisma.patient.delete({
       where: { id: req.params.id }
@@ -119,7 +120,7 @@ router.delete('/:id', async function(req: Request, res: Response, _next: NextFun
 });
 
 // Fix router.put method for Paro-Ortho transfer
-router.put('/Paro-Ortho/:id', (async (req, res, _next) => {
+router.put('/Paro-Ortho/:id', validateKeycloakToken, (async (req, res, _next) => {
   try {
     // Get the medecin ID from the request body
     const { medecinId } = req.body;
@@ -158,7 +159,7 @@ router.put('/Paro-Ortho/:id', (async (req, res, _next) => {
   }
 }) as RequestHandler);
 
-router.put('/Ortho-Paro/:id', (async (req, res, _next) => {
+router.put('/Ortho-Paro/:id', validateKeycloakToken, (async (req, res, _next) => {
   try {
     // Get the medecin ID from the request body
     const { medecinId } = req.body;
@@ -198,7 +199,7 @@ router.put('/Ortho-Paro/:id', (async (req, res, _next) => {
 }) as RequestHandler);
 
 // PUT to validate a transfer to Orthodontic service
-router.put('/validate-transfer/:actionId', (async (req, res, _next) => {
+router.put('/validate-transfer/:actionId', validateKeycloakToken, (async (req, res, _next) => {
   try {
     // Find the action by ID using Prisma ORM
     const action = await prisma.action.findUnique({

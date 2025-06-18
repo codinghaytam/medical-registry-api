@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { PrismaClient, Diagnostique } from '@prisma/client';
+import { validateKeycloakToken } from '../utils/keycloak.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -11,7 +12,7 @@ interface DiagnostiqueRequestBody {
 }
 
 // GET all diagnostiques
-router.get('/', async function(_req: Request, res: Response) {
+router.get('/', validateKeycloakToken, async function(_req: Request, res: Response) {
   try {
     const diagnostiques: Diagnostique[] = await prisma.diagnostique.findMany({
       include:{
@@ -32,7 +33,7 @@ router.get('/', async function(_req: Request, res: Response) {
 });
 
 // GET a specific diagnostique
-router.get('/:id', async function(req: Request, res: Response) {
+router.get('/:id', validateKeycloakToken, async function(req: Request, res: Response) {
   try {
     const diagnostique: Diagnostique | null = await prisma.diagnostique.findUnique({
       where: { id: req.params.id },
@@ -58,7 +59,7 @@ router.get('/:id', async function(req: Request, res: Response) {
 });
 
 // POST a new diagnostique
-router.post('/', async function(req: Request<{}, {}, DiagnostiqueRequestBody>, res: Response) {
+router.post('/', validateKeycloakToken, async function(req: Request<{}, {}, DiagnostiqueRequestBody>, res: Response) {
   try {
     const newDiagnostique: Diagnostique = await prisma.diagnostique.create({
       data: req.body
@@ -73,7 +74,7 @@ router.post('/', async function(req: Request<{}, {}, DiagnostiqueRequestBody>, r
 });
 
 // PUT to update a specific diagnostique
-router.put('/:id', async function(req: Request<{id: string}, {}, Partial<DiagnostiqueRequestBody>>, res: Response) {
+router.put('/:id', validateKeycloakToken, async function(req: Request<{id: string}, {}, Partial<DiagnostiqueRequestBody>>, res: Response) {
   try {
     const updatedDiagnostique: Diagnostique = await prisma.diagnostique.update({
       where: { id: req.params.id },

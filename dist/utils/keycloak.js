@@ -1,5 +1,7 @@
 import KcAdminClient from '@keycloak/keycloak-admin-client';
 import * as dotenv from "dotenv";
+import jwt from 'jsonwebtoken';
+import jwksClient from 'jwks-rsa';
 dotenv.config();
 let keycloakConnection = null;
 const TOKEN_REFRESH_INTERVAL = 58 * 1000; // 58 seconds
@@ -121,6 +123,75 @@ export async function getUserByUsernameOrEmail(usernameOrEmail, res) {
     }
     catch (error) {
         console.error('Error finding Keycloak user by username or email:', error);
+        return null;
+    }
+}
+/**
+ * Middleware to validate Keycloak JWT tokens
+ * @param req Express request object
+ * @param res Express response object
+ * @param next Express next function
+ */
+export async function validateKeycloakToken(req, res, next) {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
+                error: 'Unauthorized',
+                message: 'Authorization header with Bearer token is required'
+            });
+        }
+        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+        if (!token) {
+            return res.status(401).json({
+                error: 'Unauthorized',
+                message: 'Token is required'
+            });
+        }
+        // Verify token with Keycloak public key
+        const decoded = await verifyKeycloakToken(token);
+        if (!decoded) {
+            return res.status(401).json({
+                error: 'Unauthorized',
+                message: 'Invalid or expired token'
+            });
+        }
+        // Add user info to request object for use in routes
+        req.user = decoded;
+        next();
+    }
+    catch (error) {
+        console.error('Token validation error:', error);
+        return res.status(401).json({
+            error: 'Unauthorized',
+            message: 'Token validation failed'
+        });
+    }
+}
+/**
+ * Verify Keycloak JWT token using JWKS
+ * @param token The JWT token to verify
+ * @returns Decoded token payload or null if invalid
+ */
+export async function verifyKeycloakToken(token) {
+    try {
+        const client = jwksClient({
+            jwksUri: 'https://jellyfish-app-pwtvy.ondigitalocean.app/realms/myRealm/protocol/openid-connect/certs'
+        });
+        const decoded = jwt.decode(token, { complete: true });
+        if (!decoded || typeof decoded === 'string' || !decoded.header.kid) {
+            return null;
+        }
+        const key = await client.getSigningKey(decoded.header.kid);
+        const signingKey = key.getPublicKey();
+        const verified = jwt.verify(token, signingKey, {
+            algorithms: ['RS256'],
+            issuer: 'https://jellyfish-app-pwtvy.ondigitalocean.app/realms/myRealm'
+        });
+        return verified;
+    }
+    catch (error) {
+        console.error('Token verification error:', error);
         return null;
     }
 }

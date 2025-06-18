@@ -1,11 +1,10 @@
 import express from 'express';
 import * as dotenv from "dotenv";
-import { safeKeycloakConnect, getUserByEmail } from '../utils/keycloak.js';
+import { safeKeycloakConnect, getUserByEmail, validateKeycloakToken } from '../utils/keycloak.js';
 import { PrismaClient } from '@prisma/client';
 dotenv.config();
 const router = express.Router();
 const prisma = new PrismaClient();
-let kcAdminClient;
 // Helper function to get Keycloak user info
 async function getKeycloakUserInfo(userId) {
     try {
@@ -21,7 +20,7 @@ async function getKeycloakUserInfo(userId) {
     }
 }
 /* GET admins listing. */
-router.get('/', async function (_req, res) {
+router.get('/', validateKeycloakToken, async function (_req, res) {
     try {
         // Get admin users from database
         const adminUsers = await prisma.user.findMany({
@@ -53,7 +52,7 @@ router.get('/', async function (_req, res) {
     }
 });
 // Get admin by email route
-router.get('/email/:email', async function (req, res, _next) {
+router.get('/email/:email', validateKeycloakToken, async function (req, res, _next) {
     try {
         // Find admin user in database
         const dbUser = await prisma.user.findFirst({
@@ -81,7 +80,7 @@ router.get('/email/:email', async function (req, res, _next) {
         await prisma.$disconnect();
     }
 });
-router.get('/:id', async function (req, res, _next) {
+router.get('/:id', validateKeycloakToken, async function (req, res, _next) {
     try {
         // First check if this is a Keycloak ID
         const keycloakUser = await getKeycloakUserInfo(req.params.id);
@@ -127,7 +126,7 @@ router.get('/:id', async function (req, res, _next) {
         await prisma.$disconnect();
     }
 });
-router.post('/', async function (req, res) {
+router.post('/', validateKeycloakToken, async function (req, res) {
     try {
         // Connect to Keycloak
         const kc = await safeKeycloakConnect(res);
@@ -184,7 +183,7 @@ router.post('/', async function (req, res) {
         await prisma.$disconnect();
     }
 });
-router.put('/:id', async function (req, res) {
+router.put('/:id', validateKeycloakToken, async function (req, res) {
     try {
         // First check if the admin exists in our database
         const dbUser = await prisma.user.findFirst({
@@ -250,7 +249,7 @@ router.put('/:id', async function (req, res) {
         await prisma.$disconnect();
     }
 });
-router.delete('/:id', async function (req, res) {
+router.delete('/:id', validateKeycloakToken, async function (req, res) {
     try {
         // Find the admin in our database
         const dbUser = await prisma.user.findFirst({

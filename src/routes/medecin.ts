@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { PrismaClient, Medecin, Profession, User, Role } from '@prisma/client';
 import KcAdminClient from '@keycloak/keycloak-admin-client';
 import * as dotenv from "dotenv";
-import { connectToKeycloak } from '../utils/keycloak.js';
+import { connectToKeycloak, validateKeycloakToken } from '../utils/keycloak.js';
 import { validatePhone } from '../utils/validation.js';
 
 dotenv.config();
@@ -83,7 +83,7 @@ router.post('/', validatePhone, async function(req: Request<{}, {}, MedecinReque
 });
 
 // GET all medecins
-router.get('/', async function(_req: Request, res: Response, _next: NextFunction) {
+router.get('/', validateKeycloakToken, async function(_req: Request, res: Response, _next: NextFunction) {
   try {
     const medecins = await prisma.medecin.findMany({
       include: {
@@ -99,7 +99,7 @@ router.get('/', async function(_req: Request, res: Response, _next: NextFunction
   }
 });
 
-router.get('/profession/:profession', async function(req: Request, res: Response, _next: NextFunction) {
+router.get('/profession/:profession', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction) {
   try {
     if(req.params.profession in Profession){
       
@@ -122,7 +122,7 @@ router.get('/profession/:profession', async function(req: Request, res: Response
 });
 
 // GET a specific medecin
-router.get('/:id', async function(req: Request, res: Response, _next: NextFunction):Promise<any> {
+router.get('/:id', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction):Promise<any> {
   try {
     const medecin = await prisma.medecin.findUnique({
       where: { id: req.params.id },
@@ -142,7 +142,7 @@ router.get('/:id', async function(req: Request, res: Response, _next: NextFuncti
   }
 });
 
-router.get('/email/:email', async function(req: Request, res: Response, _next: NextFunction):Promise<any> {
+router.get('/email/:email', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction):Promise<any> {
   try {
     const medecin = await prisma.medecin.findFirst({
       where: { user:{
@@ -166,7 +166,7 @@ router.get('/email/:email', async function(req: Request, res: Response, _next: N
 
 
 // POST a new medecin
-router.post('/', validatePhone, async function(req: Request<{}, {}, MedecinRequestBody>, res: Response, _next: NextFunction):Promise<any> {
+router.post('/', validateKeycloakToken, validatePhone, async function(req: Request<{}, {}, MedecinRequestBody>, res: Response, _next: NextFunction):Promise<any> {
   try {
     if(!(req.body.profession in Profession)) {
       return res.status(400).send("invalid profession");
@@ -216,7 +216,7 @@ router.post('/', validatePhone, async function(req: Request<{}, {}, MedecinReque
 });
 
 // PUT to update a specific medecin
-router.put('/:id', validatePhone, async function(req: Request<{id: string}, {}, Partial<MedecinRequestBody>>, res: Response, _next: NextFunction):Promise<any> {
+router.put('/:id', validateKeycloakToken, validatePhone, async function(req: Request<{id: string}, {}, Partial<MedecinRequestBody>>, res: Response, _next: NextFunction):Promise<any> {
   try {
     if(req.body.profession && !(req.body.profession in Profession)) {
       return res.status(400).send("invalid profession");
@@ -274,7 +274,7 @@ router.put('/:id', validatePhone, async function(req: Request<{id: string}, {}, 
 });
 
 // DELETE a specific medecin
-router.delete('/:id', async function(req: Request, res: Response, _next: NextFunction):Promise<any> {
+router.delete('/:id', validateKeycloakToken, async function(req: Request, res: Response, _next: NextFunction):Promise<any> {
   try {
     const medecin = await prisma.medecin.findUnique({
       where: { userId: req.params.id },

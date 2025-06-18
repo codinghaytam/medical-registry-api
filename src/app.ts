@@ -17,6 +17,8 @@ import actionsRouter from './routes/actions.js';
 import seanceRouter from './routes/seance.js';
 import enumRouter from './routes/enums.js';
 import reevaluationRouter from './routes/reevaluation.js';
+import passwordChangeRouter from './routes/passwordChange.js';
+import verifyEmailRouter from './routes/verifyEmail.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,6 +55,8 @@ app.use('/actions', actionsRouter);
 app.use('/seance', seanceRouter);
 app.use('/enum', enumRouter);
 app.use('/reevaluation', reevaluationRouter);
+app.use('/password-change', passwordChangeRouter);
+app.use('/verify-email', verifyEmailRouter);
 
 // catch 404 and forward to error handler
 app.use((req: Request, res: Response, next: NextFunction) => {
