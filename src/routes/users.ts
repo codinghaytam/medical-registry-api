@@ -258,9 +258,8 @@ routes.put("/:id", validatePhone, async function(req: Request, res: Response, _n
         
         // Make sure phone is included in the update if provided
         const updateData = {
-            ...userData,
+            ...data,
             // If phone was explicitly provided (even as empty string), use it
-            ...(data.phone !== undefined ? { phone: data.phone } : {})
         };
         
         // Update user in local database
