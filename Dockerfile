@@ -29,7 +29,7 @@ RUN set -e && \
     echo "" >> .env && \
     echo "KEYCLOAK_REALM=${KEYCLOAK_REALM}" >> .env && \
     echo "KEYCLOAK_CLIENT=${KEYCLOAK_CLIENT}" >> .env && \
-    echo "KEYCLOAK_URL=${KEYCLOAK_URL}" >> .env && \
+    echo "KEYCLOAK_BASE_URL=${KEYCLOAK_URL}" >> .env && \
     echo "KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}" >> .env
 
 # Start the application
