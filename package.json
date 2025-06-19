@@ -6,7 +6,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon ./dist/app.js",
-    "build": "tsc"
+    "build": "tsc",
+    "dev": "nodemon --exec \"npm run build && npm start\"",
+    "setup": "node -e \"console.log('Please run setup.sh (Linux/Mac) or setup.bat (Windows) for initial setup')\"",
+    "env:check": "node -e \"require('./dist/utils/config.js').getEnvironmentConfig(); console.log('✅ Environment configuration is valid')\"",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:deploy": "npx prisma migrate deploy",
+    "prisma:studio": "npx prisma studio"
   },
   "author": "",
   "license": "ISC",

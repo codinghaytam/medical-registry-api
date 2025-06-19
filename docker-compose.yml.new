@@ -1,7 +1,8 @@
 version: '3.8'
 
 services:
-  # Node.js Application  node-app:
+  # Node.js Application
+  node-app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -49,6 +50,7 @@ services:
     networks:
       app-network:
         ipv4_address: 172.92.0.110
+
   # Keycloak for Authentication/Authorization
   keycloak:
     image: quay.io/keycloak/keycloak:21.1.1
@@ -69,7 +71,6 @@ services:
     networks:
       app-network:
         ipv4_address: 172.92.0.100
-
 
 networks:
   app-network:

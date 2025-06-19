@@ -3,15 +3,24 @@ import * as dotenv from "dotenv";
 import { Response, Request, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import jwksClient from 'jwks-rsa';
+
 dotenv.config();
 
 let keycloakConnection: KcAdminClient | null = null;
 const TOKEN_REFRESH_INTERVAL = 58 * 1000; // 58 seconds
 
+// Validate required environment variables
+const requiredEnvVars = ['KEYCLOAK_BASE_URL', 'KEYCLOAK_REALM', 'KEYCLOAK_CLIENT_ID', 'KEYCLOAK_CLIENT_SECRET'];
+for (const envVar of requiredEnvVars) {
+    if (!process.env[envVar]) {
+        throw new Error(`Missing required environment variable: ${envVar}`);
+    }
+}
+
 const kcAdminClient = new KcAdminClient();
 kcAdminClient.setConfig({
-    realmName: 'myRealm',
-    baseUrl: 'https://jellyfish-app-pwtvy.ondigitalocean.app',
+    realmName: process.env.KEYCLOAK_REALM!,
+    baseUrl: process.env.KEYCLOAK_BASE_URL!,
 });
 
 export async function connectToKeycloak() {
@@ -19,12 +28,11 @@ export async function connectToKeycloak() {
         return keycloakConnection;
     }
 
-    try {
-        // Using client credentials instead of user password
+    try {        // Using client credentials instead of user password
         await kcAdminClient.auth({
             grantType: 'client_credentials',
-            clientId: process.env.KEYCLOAK_CLIENT || 'medical-registry',
-            clientSecret: process.env.KEYCLOAK_CLIENT_SECRET || 'zw5hWC3WH11PKIcrPEBJanlawTxHg9H8'
+            clientId: process.env.KEYCLOAK_CLIENT_ID!,
+            clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!
         });
 
         const refreshInterval = setInterval(async () => {
@@ -32,8 +40,8 @@ export async function connectToKeycloak() {
                 // Using client credentials for refresh as well
                 await kcAdminClient.auth({
                     grantType: 'client_credentials',
-                    clientId: process.env.KEYCLOAK_CLIENT || 'medical-registry',
-                    clientSecret: process.env.KEYCLOAK_CLIENT_SECRET || 'zw5hWC3WH11PKIcrPEBJanlawTxHg9H8'
+                    clientId: process.env.KEYCLOAK_CLIENT_ID!,
+                    clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!
                 });
             } catch (error) {
                 console.error('Failed to refresh Keycloak token:', error);
@@ -193,7 +201,7 @@ export async function validateKeycloakToken(req: Request, res: Response, next: N
 export async function verifyKeycloakToken(token: string) {
     try {
         const client = jwksClient({
-            jwksUri: 'https://jellyfish-app-pwtvy.ondigitalocean.app/realms/myRealm/protocol/openid-connect/certs'
+            jwksUri: `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/certs`
         });
         
         const decoded = jwt.decode(token, { complete: true });
@@ -206,7 +214,7 @@ export async function verifyKeycloakToken(token: string) {
         
         const verified = jwt.verify(token, signingKey, {
             algorithms: ['RS256'],
-            issuer: 'https://jellyfish-app-pwtvy.ondigitalocean.app/realms/myRealm'
+            issuer: `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}`
         });
         
         return verified;
