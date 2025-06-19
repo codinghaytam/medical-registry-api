@@ -10,7 +10,7 @@ let keycloakConnection: KcAdminClient | null = null;
 const TOKEN_REFRESH_INTERVAL = 58 * 1000; // 58 seconds
 
 // Validate required environment variables
-const requiredEnvVars = ['KEYCLOAK_BASE_URL', 'KEYCLOAK_REALM', 'KEYCLOAK_CLIENT', 'KEYCLOAK_CLIENT_SECRET'];
+const requiredEnvVars = ['KEYCLOAK_BASE_URL', 'KEYCLOAK_REALM', 'KEYCLOAK_CLIENT_ID', 'KEYCLOAK_CLIENT_SECRET'];
 for (const envVar of requiredEnvVars) {
     if (!process.env[envVar]) {
         throw new Error(`Missing required environment variable: ${envVar}`);
