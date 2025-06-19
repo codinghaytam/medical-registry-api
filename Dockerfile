@@ -10,8 +10,8 @@ RUN npm install -g pnpm && pnpm install
 COPY . /app
 
 # Build the application
-RUN npx prisma generate && pnpm run build
+RUN npx prisma generate && npx tsc
 
 # Start the application
-CMD npx prisma migrate deploy && pnpm run start
+CMD npx prisma migrate deploy && npm run start
 EXPOSE 3000
