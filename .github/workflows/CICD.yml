@@ -14,14 +14,21 @@ jobs:
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}        
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}      
       - name: Build and push Docker image
+
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/medical-registry-api:latest
-          # No build args - environment variables should be set at runtime
+          build-args: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            PORT=${{ secrets.PORT }}
+            KEYCLOAK_URL=${{ secrets.KEYCLOAK_URL }}
+            KEYCLOAK_REALM=${{ secrets.KEYCLOAK_REALM }}
+            KEYCLOAK_CLIENT=${{ secrets.KEYCLOAK_CLIENT }}
+            KEYCLOAK_CLIENT_SECRET=${{ secrets.KEYCLOAK_CLIENT_SECRET }}
 
           
   deploy:
