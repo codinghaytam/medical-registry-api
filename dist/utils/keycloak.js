@@ -59,7 +59,7 @@ export async function safeKeycloakConnect(res) {
     catch (error) {
         console.error('Keycloak connection error:', error);
         if (res) {
-            res.status(503).send({
+            res.status(500).send({
                 error: "Keycloak service unavailable",
                 message: "Unable to connect to authentication service. Please try again later."
             });
