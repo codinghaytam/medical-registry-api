@@ -4,6 +4,7 @@ import KcAdminClient from '@keycloak/keycloak-admin-client';
 import * as dotenv from "dotenv";
 import { connectToKeycloak, validateKeycloakToken } from '../utils/keycloak.js';
 import { userInfo } from 'os';
+import { randomUUID } from 'crypto';
 
 dotenv.config();
 
@@ -151,7 +152,7 @@ router.post('/', validateKeycloakToken, async function(req: Request<{}, {}, Cons
     const newConsultation: Consultation = await prisma.consultation.create({
       data: {
         date: new Date(req.body.date),
-        idConsultation: req.body.idConsultation,
+        idConsultation: randomUUID().toString(),
         patient: {
           create: {
             nom: req.body.patient.nom,
@@ -268,7 +269,6 @@ router.put('/:id', validateKeycloakToken, async function(req: Request<{id: strin
       where: { id: req.params.id },
       data: {
         date: req.body.date ? new Date(req.body.date) : undefined,
-        idConsultation: req.body.idConsultation,
         patient: req.body.patient ? {
           update: req.body.patient
         } : undefined
