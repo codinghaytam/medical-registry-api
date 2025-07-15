@@ -183,6 +183,11 @@ routes.post("/", validateKeycloakToken, uploadSingleImage, async function (req, 
 // Update an existing reevaluation
 routes.put("/:id", validateKeycloakToken, uploadSingleImage, async function (req, res, _next) {
     try {
+        // Validate ID parameter
+        if (!req.params.id || typeof req.params.id !== 'string') {
+            res.status(400).send({ error: "Invalid reevaluation ID" });
+            return;
+        }
         // Check if reevaluation exists
         const existingReevaluation = await prisma.reevaluation.findUnique({
             where: { id: req.params.id }
@@ -191,38 +196,86 @@ routes.put("/:id", validateKeycloakToken, uploadSingleImage, async function (req
             res.status(404).send({ error: "Reevaluation not found" });
             return;
         }
-        // Extract data from request body
+        // Extract and validate data from request body
         const { indiceDePlaque, indiceGingivale, seanceId } = req.body;
+        // Validate numeric fields if provided
+        if (indiceDePlaque !== undefined) {
+            const parsedIndiceDePlaque = parseFloat(indiceDePlaque);
+            if (isNaN(parsedIndiceDePlaque) || parsedIndiceDePlaque < 0) {
+                res.status(400).send({ error: "Invalid indiceDePlaque value. Must be a positive number." });
+                return;
+            }
+        }
+        if (indiceGingivale !== undefined) {
+            const parsedIndiceGingivale = parseFloat(indiceGingivale);
+            if (isNaN(parsedIndiceGingivale) || parsedIndiceGingivale < 0) {
+                res.status(400).send({ error: "Invalid indiceGingivale value. Must be a positive number." });
+                return;
+            }
+        }
+        // Validate seanceId if provided
+        if (seanceId) {
+            try {
+                const seanceExists = await prisma.seance.findUnique({
+                    where: { id: seanceId }
+                });
+                if (!seanceExists) {
+                    res.status(400).send({ error: "Referenced seance not found" });
+                    return;
+                }
+            }
+            catch (seanceError) {
+                console.error('Error validating seance:', seanceError);
+                res.status(400).send({ error: "Invalid seance ID format" });
+                return;
+            }
+        }
         // Handle file upload - use the file directly from the request
         let imagePath = existingReevaluation.sondagePhoto;
         // If a new file is uploaded, delete the old one and use the new one
         if (req.file) {
-            // Delete the old file if it exists
-            if (existingReevaluation.sondagePhoto) {
-                await deleteImageIfExists(existingReevaluation.sondagePhoto);
+            try {
+                // Delete the old file if it exists
+                if (existingReevaluation.sondagePhoto) {
+                    await deleteImageIfExists(existingReevaluation.sondagePhoto);
+                }
+                // Use the new file
+                imagePath = req.file.filename;
             }
-            // Use the new file
-            imagePath = req.file.filename;
+            catch (fileError) {
+                console.error('Error handling file upload:', fileError);
+                res.status(500).send({ error: "Failed to process image upload" });
+                return;
+            }
+        }
+        // Prepare update data
+        const updateData = {
+            sondagePhoto: imagePath,
+        };
+        if (indiceDePlaque !== undefined) {
+            updateData.indiceDePlaque = parseFloat(indiceDePlaque);
+        }
+        if (indiceGingivale !== undefined) {
+            updateData.indiceGingivale = parseFloat(indiceGingivale);
+        }
+        if (seanceId) {
+            updateData.seance = {
+                connect: { id: seanceId }
+            };
         }
         // Update reevaluation
         const updatedReevaluation = await prisma.reevaluation.update({
             where: { id: req.params.id },
-            data: {
-                indiceDePlaque: indiceDePlaque !== undefined ? parseFloat(indiceDePlaque) : undefined,
-                indiceGingivale: indiceGingivale !== undefined ? parseFloat(indiceGingivale) : undefined,
-                sondagePhoto: imagePath,
-                // Update seance if provided
-                ...(seanceId ? {
-                    seance: {
-                        connect: { id: seanceId }
-                    }
-                } : {})
-            },
+            data: updateData,
             include: {
                 seance: {
                     include: {
                         patient: true,
-                        medecin: true
+                        medecin: {
+                            include: {
+                                user: true
+                            }
+                        }
                     }
                 }
             }
@@ -237,7 +290,26 @@ routes.put("/:id", validateKeycloakToken, uploadSingleImage, async function (req
         res.status(200).send(responseData);
     }
     catch (e) {
-        console.error(e);
+        console.error('Error updating reevaluation:', e);
+        // Handle specific Prisma errors
+        if (e instanceof Error) {
+            if (e.message.includes('Record to update not found')) {
+                res.status(404).send({ error: "Reevaluation not found" });
+                return;
+            }
+            if (e.message.includes('Foreign key constraint')) {
+                res.status(400).send({ error: "Invalid reference to related record" });
+                return;
+            }
+            if (e.message.includes('Unique constraint')) {
+                res.status(409).send({ error: "Conflict with existing record" });
+                return;
+            }
+            if (e.message.includes('Invalid') || e.message.includes('expected')) {
+                res.status(400).send({ error: "Invalid data format" });
+                return;
+            }
+        }
         res.status(500).send({ error: "Failed to update reevaluation" });
     }
     finally {

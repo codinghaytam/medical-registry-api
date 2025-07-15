@@ -2,6 +2,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import * as dotenv from "dotenv";
 import { validateKeycloakToken } from '../utils/keycloak.js';
+import { randomUUID } from 'crypto';
 dotenv.config();
 let kcAdminClient;
 const router = express.Router();
@@ -97,7 +98,7 @@ router.post('/', validateKeycloakToken, async function (req, res, _next) {
         const newConsultation = await prisma.consultation.create({
             data: {
                 date: new Date(req.body.date),
-                idConsultation: req.body.idConsultation,
+                idConsultation: randomUUID().toString(),
                 patient: {
                     create: {
                         nom: req.body.patient.nom,
@@ -209,7 +210,6 @@ router.put('/:id', validateKeycloakToken, async function (req, res, _next) {
             where: { id: req.params.id },
             data: {
                 date: req.body.date ? new Date(req.body.date) : undefined,
-                idConsultation: req.body.idConsultation,
                 patient: req.body.patient ? {
                     update: req.body.patient
                 } : undefined

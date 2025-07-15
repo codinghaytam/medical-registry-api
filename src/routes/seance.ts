@@ -51,7 +51,7 @@ async function validateSeanceTypeWithMedecinProfession(type: SeanceType, medecin
       };
     }
     
-    if (['ACTIVATION', 'RECOLLAGE'].includes(type) && medecin.profession !== ('ORTHODONTAIRE' as Profession)) {
+    if (['ACTIVATION', 'DEBUT_DE_TRAITEMENT','FIN_DE_TRAITEMENT','SUIVI_POST_TRAITEMENT'].includes(type) && medecin.profession !== ('ORTHODONTAIRE' as Profession)) {
       return { 
         valid: false, 
         message: `Les séances de type ${type} ne peuvent être associées qu'à un médecin ORTHODONTAIRE`

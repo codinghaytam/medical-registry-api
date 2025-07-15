@@ -129,7 +129,7 @@ routes.get("/email/:email", validateKeycloakToken, async function (req, res, _ne
 routes.post("/", validateKeycloakToken, validatePhone, async function (req, res, _next) {
     try {
         const data = req.body;
-        if (!data.password) {
+        if (!data.pwd) {
             res.status(400).json({ error: "Password is required" });
         }
         if (!data.role || !(data.role in Role)) {
@@ -145,7 +145,7 @@ routes.post("/", validateKeycloakToken, validatePhone, async function (req, res,
             firstName: data.name ? data.name.split(' ')[0] : '',
             lastName: data.name ? data.name.split(' ').slice(1).join(' ') : '',
             enabled: true,
-            credentials: [{ type: 'password', value: data.password, temporary: false }],
+            credentials: [{ type: 'password', value: data.pwd, temporary: false }],
             attributes: {
                 // Include phone number as an attribute if provided
                 ...(data.phone ? { phoneNumber: [data.phone] } : {})
@@ -210,13 +210,13 @@ routes.put("/:id", validateKeycloakToken, validatePhone, async function (req, re
                     }
                 });
                 // Update password if provided
-                if (data.password) {
+                if (data.pwd) {
                     await kc.users.resetPassword({
                         id: kcUsers[0].id,
                         credential: {
                             temporary: false,
                             type: 'password',
-                            value: data.password
+                            value: data.pwd
                         }
                     });
                 }
