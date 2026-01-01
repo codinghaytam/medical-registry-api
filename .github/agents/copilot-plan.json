@@ -1,0 +1,152 @@
+{
+  "plan_version": "1.1",
+  "project_context": "Node.js + Express + TypeScript API with Prisma ORM. Refactor to layered architecture without changing API endpoints or definitions.",
+  "goals": [
+    "Adopt feature-based structure with Controller-Service-Repository layers.",
+    "Add Prisma transactions for multi-step DB operations.",
+    "Add unit tests (with mocks) for services and repositories.",
+    "Preserve exact API contract and behavior.",
+    "Ensure full traceability and resilience."
+  ],
+  "critical_rules": [
+    "Do not modify unrelated files (e.g., README, CI configs, Docker).",
+    "Never edit anything in node_modules/.",
+    "If confused or missing context → ask user, do not invent logic.",
+    "Allowed to change supporting technologies (e.g., validation lib).",
+    "Do NOT run tests, start server, or use terminal unless explicitly allowed.",
+    "All integration/Postman tests must live in a single collection file.",
+    "Unit tests are required for new/refactored layers."
+  ],
+  "prerequisites": [
+    "Git repository initialized.",
+    "Prisma setup complete.",
+    "Existing behavior understood (ask if unclear)."
+  ],
+  "steps": [
+    {
+      "step_id": 1,
+      "description": "Conduct project discovery and analysis",
+      "actions": [
+        "Review current routes, services, Prisma schema, and tests to map feature boundaries",
+        "Document API surface, shared utilities, data flows, and known pain points",
+        "Capture findings, risks, and open questions in refactor-log.md (analysis section)"
+      ],
+      "preconditions": "Prerequisites satisfied",
+      "postconditions": "Discovery notes available to guide refactor scope",
+      "status": "pending",
+      "commit_message": "chore: document current architecture baseline"
+    },
+    {
+      "step_id": 2,
+      "description": "Setup branch and tracking",
+      "actions": [
+        "Create branch: refactor-layered-architecture",
+        "Create refactor-log.md with start date and rules summary"
+      ],
+      "preconditions": "Main branch clean",
+      "postconditions": "Branch and log exist",
+      "status": "pending",
+      "commit_message": "chore: setup refactor branch and log"
+    },
+    {
+      "step_id": 3,
+      "description": "Create feature module folders",
+      "actions": [
+        "Identify all features from existing routes/controllers",
+        "Create src/modules/[feature]/ directories",
+        "Move related files without changing code yet"
+      ],
+      "preconditions": "Step 2 complete",
+      "postconditions": "Basic folder structure in place",
+      "status": "pending",
+      "commit_message": "refactor: create feature-based module structure"
+    },
+    {
+      "step_id": 4,
+      "description": "Migrate code to layered architecture (per feature)",
+      "actions": [
+        "For each feature module:",
+        "  - Extract HTTP handling → [feature].controller.ts",
+        "  - Move business logic → [feature].service.ts",
+        "  - Isolate DB access → [feature].repository.ts",
+        "  - Create [feature].routes.ts",
+        "  - Add [feature].dto.ts with Zod validation",
+        "Update app.ts to mount new routes"
+      ],
+      "notes": "Ask user if business logic is unclear. Do not assume.",
+      "preconditions": "Step 3 complete",
+      "postconditions": "Clean separation of concerns, API behavior unchanged",
+      "status": "pending",
+      "commit_message": "refactor([feature]): migrate to controller-service-repository"
+    },
+    {
+      "step_id": 5,
+      "description": "Add transactional safety",
+      "actions": [
+        "Identify service methods with multiple DB operations",
+        "Wrap in prisma.$transaction(async (tx) => { ... })",
+        "Update repositories to optionally accept transaction client"
+      ],
+      "notes": "Only add where atomicity is required",
+      "preconditions": "Step 4 complete",
+      "postconditions": "Multi-step ops are transactional",
+      "status": "pending",
+      "commit_message": "feat: add Prisma transactions for data consistency"
+    },
+    {
+      "step_id": 6,
+      "description": "Add unit tests with mocks",
+      "actions": [
+        "For each service: write unit tests mocking repository",
+        "For each repository: write tests mocking Prisma client",
+        "Use jest.mock('@prisma/client') where needed",
+        "Place tests as [file].test.ts in same module"
+      ],
+      "notes": "Do NOT run tests. Just write them.",
+      "preconditions": "Step 5 complete",
+      "postconditions": "Comprehensive unit tests added for layers",
+      "status": "pending",
+      "commit_message": "test: add unit and mock tests for services and repositories"
+    },
+    {
+      "step_id": 7,
+      "description": "Consolidate integration tests",
+      "actions": [
+        "Collect all existing Postman/Newman tests",
+        "Export/merge into single file: tests/postman_collection.json",
+        "Remove scattered test files if redundant"
+      ],
+      "preconditions": "Previous steps complete",
+      "postconditions": "All integration tests in one file",
+      "status": "pending",
+      "commit_message": "chore: consolidate integration tests into single Postman collection"
+    },
+    {
+      "step_id": 8,
+      "description": "Add shared utilities and middleware",
+      "actions": [
+        "Create src/middlewares/error.middleware.ts",
+        "Create src/utils/apiError.ts and logger.ts if beneficial",
+        "Integrate into app.ts"
+      ],
+      "preconditions": "Step 7 complete",
+      "postconditions": "Centralized error handling and utilities",
+      "status": "pending",
+      "commit_message": "feat: add centralized error handling and utils"
+    },
+    {
+      "step_id": 9,
+      "description": "Final review preparation",
+      "actions": [
+        "Update refactor-log.md with full summary",
+        "List all changed files and rationale",
+        "Prepare for user review"
+      ],
+      "preconditions": "All prior steps complete",
+      "postconditions": "Refactor complete, traceable, ready for review",
+      "status": "pending",
+      "commit_message": "docs: finalize refactor log and summary"
+    }
+  ],
+  "resilience_notes": "Each step is atomic and traceable via git commits and refactor-log.md. If session interrupted, resume from last completed step using git log and status field."
+}
