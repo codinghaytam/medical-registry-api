@@ -1,4 +1,4 @@
-name: Build and Deploy to DigitalOcean
+name: Build and Deploy to Google Cloud VM
 
 on:
   push:
@@ -14,9 +14,9 @@ jobs:
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}      
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      
       - name: Build and push Docker image
-
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -30,18 +30,98 @@ jobs:
             KEYCLOAK_CLIENT=${{ secrets.KEYCLOAK_CLIENT }}
             KEYCLOAK_CLIENT_SECRET=${{ secrets.KEYCLOAK_CLIENT_SECRET }}
 
-          
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: digitalocean/action-doctl@v2
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-      - name: checkout code
-        run: ls
-      - name: Update DigitalOcean App with new image
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Deploy to Google Cloud VM
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_ZONE: europe-southwest1-c
+          VM_NAME: basma-vm-1
+          DOCKER_IMAGE: ${{ secrets.DOCKER_HUB_USERNAME }}/medical-registry-api:latest
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PORT: ${{ secrets.PORT }}
+          KEYCLOAK_URL: ${{ secrets.KEYCLOAK_URL }}
+          KEYCLOAK_REALM: ${{ secrets.KEYCLOAK_REALM }}
+          KEYCLOAK_CLIENT: ${{ secrets.KEYCLOAK_CLIENT }}
+          KEYCLOAK_CLIENT_SECRET: ${{ secrets.KEYCLOAK_CLIENT_SECRET }}
         run: |
-          doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} --spec app.yaml --update-sources
+          # Create docker-compose file
+          cat > docker-compose.yml <<EOF
+          version: '3.8'
+          services:
+            medical-registry-api:
+              image: ${DOCKER_IMAGE}
+              container_name: medical-registry-api
+              restart: unless-stopped
+              ports:
+                - "3000:3000"
+              environment:
+                - DATABASE_URL=${DATABASE_URL}
+                - PORT=${PORT}
+                - KEYCLOAK_URL=${KEYCLOAK_URL}
+                - KEYCLOAK_REALM=${KEYCLOAK_REALM}
+                - KEYCLOAK_CLIENT=${KEYCLOAK_CLIENT}
+                - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+                - NODE_ENV=production
+              networks:
+                - app-network
+          
+          networks:
+            app-network:
+              driver: bridge
+          EOF
+          
+          # Copy docker-compose file to VM
+          gcloud compute scp docker-compose.yml ${VM_NAME}:~/docker-compose.yml \
+            --zone=${GCP_ZONE} \
+            --project=${GCP_PROJECT}
+          
+          # Deploy on VM
+          gcloud compute ssh ${VM_NAME} \
+            --zone=${GCP_ZONE} \
+            --project=${GCP_PROJECT} \
+            --command="
+              # Pull latest image
+              docker pull ${DOCKER_IMAGE}
+              
+              # Stop and remove old container
+              docker-compose down || true
+              
+              # Start new container
+              docker-compose up -d
+              
+              # Clean up old images
+              docker image prune -af
+              
+              # Show running containers
+              docker ps
+            "
+      
+      - name: Verify Deployment
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_ZONE: europe-southwest1-c
+          VM_NAME: basma-vm-1
+        run: |
+          # Wait for container to start
+          sleep 10
+          
+          # Check container health
+          gcloud compute ssh ${VM_NAME} \
+            --zone=${GCP_ZONE} \
+            --project=${GCP_PROJECT} \
+            --command="docker ps | grep medical-registry-api && echo 'Deployment successful!' || echo 'Deployment failed!'"
+
         

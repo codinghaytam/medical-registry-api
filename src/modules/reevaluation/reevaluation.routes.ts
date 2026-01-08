@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { validateKeycloakToken } from '../../utils/keycloak.js';
-import { uploadSingleImage } from '../../utils/upload.js';
+import { uploadMultipleImages } from '../../utils/upload.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { validateRequest } from '../../middlewares/validation.middleware.js';
 import {
@@ -23,14 +23,14 @@ router.get(
 router.post(
   '/',
   validateKeycloakToken,
-  uploadSingleImage,
+  uploadMultipleImages,
   validateRequest(createReevaluationSchema),
   asyncHandler(controller.createReevaluation)
 );
 router.put(
   '/:id',
   validateKeycloakToken,
-  uploadSingleImage,
+  uploadMultipleImages,
   validateRequest(updateReevaluationSchema),
   asyncHandler(controller.updateReevaluation)
 );

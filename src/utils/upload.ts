@@ -74,6 +74,9 @@ const upload = multer({
 const uploadSingleImage = upload.single("sondagePhoto");
 
 // Method to upload multiple images
+const uploadMultipleImages = upload.array("sondagePhotos", 10);
+
+// Method to upload multiple images
 
 // Method to delete a file
 const deleteFile = (filePath: string): Promise<boolean> => {
@@ -159,6 +162,7 @@ const uploadImagePromise = (req: Request, res: Response): Promise<string | null>
 export {
   upload,
   uploadSingleImage,
+  uploadMultipleImages,
   deleteFile,
   updateFile,
   isValidImageFile,

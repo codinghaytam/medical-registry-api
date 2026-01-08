@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import type { Express } from 'express';
 import { ReevaluationService } from './reevaluation.service.js';
 
 export class ReevaluationController {
@@ -15,6 +16,7 @@ export class ReevaluationController {
   };
 
   createReevaluation = async (req: Request, res: Response) => {
+    const files = Array.isArray(req.files) ? (req.files as Express.Multer.File[]) : [];
     const reevaluation = await this.service.create(
       {
         ...req.body,
@@ -22,20 +24,28 @@ export class ReevaluationController {
         indiceGingivale: parseFloat(req.body.indiceGingivale),
         date: new Date(req.body.date)
       },
-      req.file?.filename
+      files
     );
     res.status(201).json(reevaluation);
   };
 
   updateReevaluation = async (req: Request, res: Response) => {
+    const files = Array.isArray(req.files) ? (req.files as Express.Multer.File[]) : [];
+    const removeUploadIds = Array.isArray(req.body.removeUploadIds)
+      ? req.body.removeUploadIds
+      : req.body.removeUploadIds
+        ? [req.body.removeUploadIds]
+        : undefined;
+
     const reevaluation = await this.service.update(
       req.params.id,
       {
         indiceDePlaque: req.body.indiceDePlaque ? parseFloat(req.body.indiceDePlaque) : undefined,
         indiceGingivale: req.body.indiceGingivale ? parseFloat(req.body.indiceGingivale) : undefined,
-        seanceId: req.body.seanceId
+        seanceId: req.body.seanceId,
+        removeUploadIds
       },
-      req.file?.filename
+      files
     );
     res.status(200).json(reevaluation);
   };

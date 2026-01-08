@@ -17,7 +17,8 @@ export class ReevaluationRepository {
             },
             Reevaluation: true
           }
-        }
+        },
+        uploads: true
       }
     });
   }
@@ -36,7 +37,8 @@ export class ReevaluationRepository {
             },
             Reevaluation: true
           }
-        }
+        },
+        uploads: true
       }
     });
   }
@@ -52,7 +54,8 @@ export class ReevaluationRepository {
               include: { user: true }
             }
           }
-        }
+        },
+        uploads: true
       }
     });
   }
@@ -69,7 +72,8 @@ export class ReevaluationRepository {
               include: { user: true }
             }
           }
-        }
+        },
+        uploads: true
       }
     });
   }

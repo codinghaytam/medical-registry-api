@@ -151,9 +151,9 @@ model Reevaluation {
   id              String   @id @default(uuid())
   indiceDePlaque  Float
   indiceGingivale Float
-  sondagePhoto    String? // URL or path to the pocket probing photo
   seance         Seance  @relation(fields: [seanceId], references: [id])
   seanceId       String @unique
+  uploads        Upload[]
 }
 
 model Action {
@@ -165,6 +165,20 @@ model Action {
   medecinId   String
   patient     Patient  @relation(fields: [patientId], references: [id])
   patientId   String
+}
+
+
+
+model Upload {
+  id             String   @id @default(uuid())
+  filename       String
+  originalName   String
+  mimeType       String
+  size           Int
+  path           String
+  createdAt      DateTime @default(now())
+  reevaluation   Reevaluation @relation(fields: [reevaluationId], references: [id])
+  reevaluationId String
 }
 
 

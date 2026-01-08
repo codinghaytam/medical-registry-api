@@ -1,0 +1,1796 @@
+openapi: 3.1.0
+info:
+  title: Medical Registry API
+  version: 1.0.0
+  description: |
+    HTTP documentation for the Medical Registry backend. The API is secured with Keycloak-issued
+    Bearer tokens on every route that uses the `validateKeycloakToken` middleware. Public routes are
+    called out explicitly. All date-time values are ISO-8601 strings in UTC.
+servers:
+  - url: http://localhost:3000
+    description: Local development
+security:
+  - KeycloakAccessToken: []
+tags:
+  - name: Users
+    description: Manage Keycloak-backed platform users.
+  - name: Medecins
+    description: Manage medical professionals linked to user accounts.
+  - name: Etudiants
+    description: Manage student accounts linked to user records.
+  - name: Admins
+    description: CRUD flows for administrator accounts.
+  - name: Patients
+    description: Patient demographics and transfer workflows.
+  - name: Consultations
+    description: Consultation lifecycle plus embedded diagnoses.
+  - name: Diagnostiques
+    description: Stand-alone diagnostic notes tied to consultations.
+  - name: Actions
+    description: Administrative transfer actions and validations.
+  - name: Seances
+    description: Treatment sessions linked to patients and medecins.
+  - name: Reevaluations
+    description: Reevaluation sessions with optional image uploads.
+  - name: Enums
+    description: Reference data enumerations for form scaffolding.
+  - name: Password
+    description: Password reset and change utilities.
+  - name: VerifyEmail
+    description: Email verification workflows coordinated with Keycloak.
+paths:
+  /users:
+    get:
+      tags: [Users]
+      summary: List users
+      description: Returns all platform users regardless of role.
+      responses:
+        '200':
+          description: Users fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Users]
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserInput'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/Error'
+  /users/role/{role}:
+    get:
+      tags: [Users]
+      summary: List users by role
+      parameters:
+        - $ref: '#/components/parameters/RoleParam'
+      responses:
+        '200':
+          description: Users fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/Error'
+  /users/medecins:
+    get:
+      tags: [Users]
+      summary: List medecins with Keycloak metadata
+      responses:
+        '200':
+          description: Medecins plus optional Keycloak info
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Medecin'
+        default:
+          $ref: '#/components/responses/Error'
+  /users/email/{email}:
+    get:
+      tags: [Users]
+      summary: Get user by email
+      parameters:
+        - $ref: '#/components/parameters/EmailParam'
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [Users]
+      summary: Update user
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserInput'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Users]
+      summary: Delete user
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: User deleted
+        default:
+          $ref: '#/components/responses/Error'
+  /medecin:
+    get:
+      tags: [Medecins]
+      summary: List medecins
+      responses:
+        '200':
+          description: Medecins fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Medecin'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Medecins]
+      summary: Create medecin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMedecinInput'
+      responses:
+        '201':
+          description: Medecin created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medecin'
+        default:
+          $ref: '#/components/responses/Error'
+  /medecin/profession/{profession}:
+    get:
+      tags: [Medecins]
+      summary: Filter medecins by profession
+      parameters:
+        - name: profession
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Profession'
+      responses:
+        '200':
+          description: Medecins fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Medecin'
+        default:
+          $ref: '#/components/responses/Error'
+  /medecin/email/{email}:
+    get:
+      tags: [Medecins]
+      summary: Get medecin by email
+      parameters:
+        - $ref: '#/components/parameters/EmailParam'
+      responses:
+        '200':
+          description: Medecin details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medecin'
+        default:
+          $ref: '#/components/responses/Error'
+  /medecin/{id}:
+    get:
+      tags: [Medecins]
+      summary: Get medecin by ID
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Medecin details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medecin'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [Medecins]
+      summary: Update medecin
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMedecinInput'
+      responses:
+        '200':
+          description: Medecin updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medecin'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Medecins]
+      summary: Delete medecin
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: Medecin deleted
+        default:
+          $ref: '#/components/responses/Error'
+  /etudiant:
+    get:
+      tags: [Etudiants]
+      summary: List students
+      responses:
+        '200':
+          description: Students fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Etudiant'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Etudiants]
+      summary: Create student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEtudiantInput'
+      responses:
+        '201':
+          description: Student created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Etudiant'
+        default:
+          $ref: '#/components/responses/Error'
+  /etudiant/{id}:
+    get:
+      tags: [Etudiants]
+      summary: Get student by ID
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Student details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Etudiant'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [Etudiants]
+      summary: Update student
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEtudiantInput'
+      responses:
+        '200':
+          description: Student updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Etudiant'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Etudiants]
+      summary: Delete student
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: Student deleted
+        default:
+          $ref: '#/components/responses/Error'
+  /admin:
+    get:
+      tags: [Admins]
+      summary: List admins
+      responses:
+        '200':
+          description: Admins fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Admin'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Admins]
+      summary: Create admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdminInput'
+      responses:
+        '201':
+          description: Admin created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Admin'
+        default:
+          $ref: '#/components/responses/Error'
+  /admin/email/{email}:
+    get:
+      tags: [Admins]
+      summary: Get admin by email
+      parameters:
+        - $ref: '#/components/parameters/EmailParam'
+      responses:
+        '200':
+          description: Admin details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Admin'
+        default:
+          $ref: '#/components/responses/Error'
+  /admin/{id}:
+    get:
+      tags: [Admins]
+      summary: Get admin by ID
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Admin details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Admin'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [Admins]
+      summary: Update admin
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAdminInput'
+      responses:
+        '200':
+          description: Admin updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Admin'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Admins]
+      summary: Delete admin
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: Admin deleted
+        default:
+          $ref: '#/components/responses/Error'
+  /patient:
+    get:
+      tags: [Patients]
+      summary: List patients
+      responses:
+        '200':
+          description: Patients fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Patient'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Patients]
+      summary: Create patient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePatientInput'
+      responses:
+        '201':
+          description: Patient created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+        default:
+          $ref: '#/components/responses/Error'
+  /patient/{id}:
+    get:
+      tags: [Patients]
+      summary: Get patient by ID
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Patient details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [Patients]
+      summary: Update patient
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePatientInput'
+      responses:
+        '200':
+          description: Patient updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Patients]
+      summary: Delete patient
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: Patient deleted
+        default:
+          $ref: '#/components/responses/Error'
+  /patient/Paro-Ortho/{id}:
+    put:
+      tags: [Patients]
+      summary: Transfer patient from Parodontie to Orthodontie
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Transfer initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+        default:
+          $ref: '#/components/responses/Error'
+  /patient/Ortho-Paro/{id}:
+    put:
+      tags: [Patients]
+      summary: Transfer patient from Orthodontie to Parodontie
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Transfer initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+        default:
+          $ref: '#/components/responses/Error'
+  /patient/validate-transfer/{actionId}:
+    put:
+      tags: [Patients]
+      summary: Validate patient transfer action
+      parameters:
+        - name: actionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateTransferInput'
+      responses:
+        '200':
+          description: Transfer validated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+        default:
+          $ref: '#/components/responses/Error'
+  /consultation:
+    get:
+      tags: [Consultations]
+      summary: List consultations
+      responses:
+        '200':
+          description: Consultations fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Consultation'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Consultations]
+      summary: Create consultation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConsultationInput'
+      responses:
+        '201':
+          description: Consultation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consultation'
+        default:
+          $ref: '#/components/responses/Error'
+  /consultation/{id}:
+    get:
+      tags: [Consultations]
+      summary: Get consultation by ID
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Consultation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consultation'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [Consultations]
+      summary: Update consultation
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConsultationInput'
+      responses:
+        '200':
+          description: Consultation updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consultation'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Consultations]
+      summary: Delete consultation
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: Consultation deleted
+        default:
+          $ref: '#/components/responses/Error'
+  /consultation/{id}/diagnosis:
+    post:
+      tags: [Consultations]
+      summary: Add diagnosis to consultation
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiagnosisInput'
+      responses:
+        '201':
+          description: Diagnosis created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Diagnostique'
+        default:
+          $ref: '#/components/responses/Error'
+  /consultation/diagnosis/{diagnosisId}:
+    put:
+      tags: [Consultations]
+      summary: Update consultation diagnosis
+      parameters:
+        - name: diagnosisId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiagnosisUpdateInput'
+      responses:
+        '200':
+          description: Diagnosis updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Diagnostique'
+        default:
+          $ref: '#/components/responses/Error'
+  /diagnostique:
+    get:
+      tags: [Diagnostiques]
+      summary: List diagnostiques
+      responses:
+        '200':
+          description: Diagnostiques fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Diagnostique'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Diagnostiques]
+      summary: Create diagnostique
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDiagnostiqueInput'
+      responses:
+        '201':
+          description: Diagnostique created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Diagnostique'
+        default:
+          $ref: '#/components/responses/Error'
+  /diagnostique/{id}:
+    get:
+      tags: [Diagnostiques]
+      summary: Get diagnostique by ID
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Diagnostique details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Diagnostique'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [Diagnostiques]
+      summary: Update diagnostique
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDiagnostiqueInput'
+      responses:
+        '200':
+          description: Diagnostique updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Diagnostique'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Diagnostiques]
+      summary: Delete diagnostique
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: Diagnostique deleted
+        default:
+          $ref: '#/components/responses/Error'
+  /actions:
+    get:
+      tags: [Actions]
+      summary: List actions
+      responses:
+        '200':
+          description: Actions fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Action'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Actions]
+      summary: Create action
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateActionInput'
+      responses:
+        '201':
+          description: Action created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+        default:
+          $ref: '#/components/responses/Error'
+  /actions/{id}:
+    get:
+      tags: [Actions]
+      summary: Get action by ID
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Action details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [Actions]
+      summary: Update action
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateActionInput'
+      responses:
+        '200':
+          description: Action updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Actions]
+      summary: Delete action
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: Action deleted
+        default:
+          $ref: '#/components/responses/Error'
+  /actions/validate-transfer-ortho/{id}:
+    put:
+      tags: [Actions]
+      summary: Validate transfer to Orthodontie
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Action validated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+        default:
+          $ref: '#/components/responses/Error'
+  /actions/validate-transfer-paro/{id}:
+    put:
+      tags: [Actions]
+      summary: Validate transfer to Parodontie
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Action validated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+        default:
+          $ref: '#/components/responses/Error'
+  /seance:
+    get:
+      tags: [Seances]
+      summary: List seances
+      responses:
+        '200':
+          description: Seances fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Seance'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Seances]
+      summary: Create seance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSeanceInput'
+      responses:
+        '201':
+          description: Seance created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Seance'
+        default:
+          $ref: '#/components/responses/Error'
+  /seance/{id}:
+    get:
+      tags: [Seances]
+      summary: Get seance by ID
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Seance details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Seance'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [Seances]
+      summary: Update seance
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSeanceInput'
+      responses:
+        '200':
+          description: Seance updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Seance'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Seances]
+      summary: Delete seance
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: Seance deleted
+        default:
+          $ref: '#/components/responses/Error'
+  /reevaluation:
+    get:
+      tags: [Reevaluations]
+      summary: List reevaluations
+      responses:
+        '200':
+          description: Reevaluations fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reevaluation'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Reevaluations]
+      summary: Create reevaluation
+      description: Accepts optional `sondagePhotos` files within a multipart payload.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/CreateReevaluationInput'
+                - type: object
+                  properties:
+                    sondagePhotos:
+                      type: array
+                      items:
+                        type: string
+                        format: binary
+                      maxItems: 10
+      responses:
+        '201':
+          description: Reevaluation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reevaluation'
+        default:
+          $ref: '#/components/responses/Error'
+  /reevaluation/{id}:
+    get:
+      tags: [Reevaluations]
+      summary: Get reevaluation by ID
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Reevaluation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reevaluation'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [Reevaluations]
+      summary: Update reevaluation
+      description: Accepts optional additional `sondagePhotos` files and removal IDs.
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/UpdateReevaluationInput'
+                - type: object
+                  properties:
+                    sondagePhotos:
+                      type: array
+                      items:
+                        type: string
+                        format: binary
+                      maxItems: 10
+      responses:
+        '200':
+          description: Reevaluation updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reevaluation'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Reevaluations]
+      summary: Delete reevaluation
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: Reevaluation deleted
+        default:
+          $ref: '#/components/responses/Error'
+  /enum/motif-consultation:
+    get:
+      tags: [Enums]
+      summary: List motif consultation values
+      security: []
+      responses:
+        '200':
+          description: Motif values
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MotifConsultation'
+  /enum/type-mastication:
+    get:
+      tags: [Enums]
+      summary: List type mastication values
+      security: []
+      responses:
+        '200':
+          description: Mastication values
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TypeMastication'
+  /enum/hygiene-bucco-dentaire:
+    get:
+      tags: [Enums]
+      summary: List hygiene levels
+      security: []
+      responses:
+        '200':
+          description: Hygiene values
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HygieneBuccoDentaire'
+  /password-change/{email}:
+    put:
+      tags: [Password]
+      summary: Change password by email
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EmailParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeInput'
+      responses:
+        '200':
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        default:
+          $ref: '#/components/responses/Error'
+  /verify-email/{email}:
+    post:
+      tags: [VerifyEmail]
+      summary: Send verification email
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EmailParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '202':
+          description: Verification email queued
+        default:
+          $ref: '#/components/responses/Error'
+  /verify-email/{email}/status:
+    get:
+      tags: [VerifyEmail]
+      summary: Get verification status
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EmailParam'
+      responses:
+        '200':
+          description: Status payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyEmailStatus'
+        default:
+          $ref: '#/components/responses/Error'
+  /verify-email/{email}/resend:
+    put:
+      tags: [VerifyEmail]
+      summary: Resend verification email
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EmailParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '202':
+          description: Verification email re-sent
+        default:
+          $ref: '#/components/responses/Error'
+  /verify-email/{email}/mark-verified:
+    put:
+      tags: [VerifyEmail]
+      summary: Mark email as verified (admin-only)
+      parameters:
+        - $ref: '#/components/parameters/EmailParam'
+      responses:
+        '200':
+          description: Email marked verified
+        default:
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    KeycloakAccessToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    EmailParam:
+      name: email
+      in: path
+      required: true
+      schema:
+        type: string
+        format: email
+    RoleParam:
+      name: role
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Role'
+  responses:
+    Error:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        message:
+          type: string
+        details:
+          description: Optional validation or Keycloak details
+          oneOf:
+            - type: string
+            - type: object
+            - type: array
+    Role:
+      type: string
+      enum: [ETUDIANT, MEDECIN, ADMIN]
+    Profession:
+      type: string
+      enum: [PARODONTAIRE, ORTHODONTAIRE]
+    ActionType:
+      type: string
+      enum: [TRANSFER_ORTHO, TRANSFER_PARO]
+    Status:
+      type: string
+      enum: [PENDING, IN_PROGRESS, COMPLETED]
+    MotifConsultation:
+      type: string
+      enum: [ESTHETIQUE, FONCTIONNELLE, ADRESSE_PAR_CONFRERE]
+    HygieneBuccoDentaire:
+      type: string
+      enum: [BONNE, MOYENNE, MAUVAISE]
+    TypeMastication:
+      type: string
+      enum: [UNILATERALE_ALTERNEE, UNILATERALE_STRICTE, BILATERALE]
+    SeanceType:
+      type: string
+      enum:
+        - ACTIVATION
+        - DEBUT_DE_TRAITEMENT
+        - FIN_DE_TRAITEMENT
+        - SUIVI_POST_TRAITEMENT
+        - REEVALUATION
+        - PHASE_CURATIVE
+        - MAINTENANCE
+        - THERAPEUTIQUE_INITIALE
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        phone:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+    CreateUserInput:
+      type: object
+      required: [username, email, firstName, lastName, role, pwd]
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        pwd:
+          type: string
+          format: password
+    UpdateUserInput:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        pwd:
+          type: string
+          format: password
+    Medecin:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        profession:
+          $ref: '#/components/schemas/Profession'
+        isSpecialiste:
+          type: boolean
+        userId:
+          type: string
+          format: uuid
+        user:
+          $ref: '#/components/schemas/User'
+    CreateMedecinInput:
+      type: object
+      required: [username, email, firstName, lastName, profession, isSpecialiste, pwd]
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        profession:
+          $ref: '#/components/schemas/Profession'
+        isSpecialiste:
+          type: boolean
+        pwd:
+          type: string
+          format: password
+        phone:
+          type: string
+    UpdateMedecinInput:
+      allOf:
+        - $ref: '#/components/schemas/CreateMedecinInput'
+      required: []
+    Etudiant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        niveau:
+          type: integer
+        userId:
+          type: string
+          format: uuid
+        user:
+          $ref: '#/components/schemas/User'
+    CreateEtudiantInput:
+      type: object
+      required: [username, firstName, lastName, email, niveau, pwd]
+      properties:
+        username:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        niveau:
+          type: string
+          pattern: '^[0-9]+$'
+        pwd:
+          type: string
+          format: password
+        phone:
+          type: string
+    UpdateEtudiantInput:
+      allOf:
+        - $ref: '#/components/schemas/CreateEtudiantInput'
+      required: []
+    Admin:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        keycloakDetails:
+          type: object
+    CreateAdminInput:
+      type: object
+      required: [username, email, firstName, lastName]
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        pwd:
+          type: string
+          format: password
+    UpdateAdminInput:
+      allOf:
+        - $ref: '#/components/schemas/CreateAdminInput'
+      required: []
+    Patient:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nom:
+          type: string
+        prenom:
+          type: string
+        adresse:
+          type: string
+        tel:
+          type: string
+        numeroDeDossier:
+          type: string
+        motifConsultation:
+          $ref: '#/components/schemas/MotifConsultation'
+        hygieneBuccoDentaire:
+          $ref: '#/components/schemas/HygieneBuccoDentaire'
+        typeMastication:
+          $ref: '#/components/schemas/TypeMastication'
+    CreatePatientInput:
+      type: object
+      required:
+        [nom, prenom, adresse, tel, numeroDeDossier, motifConsultation, hygieneBuccoDentaire, typeMastication]
+      properties:
+        nom:
+          type: string
+        prenom:
+          type: string
+        adresse:
+          type: string
+        tel:
+          type: string
+        numeroDeDossier:
+          type: string
+        motifConsultation:
+          $ref: '#/components/schemas/MotifConsultation'
+        anameseGenerale:
+          type: string
+          nullable: true
+        anamneseFamiliale:
+          type: string
+          nullable: true
+        anamneseLocale:
+          type: string
+          nullable: true
+        hygieneBuccoDentaire:
+          $ref: '#/components/schemas/HygieneBuccoDentaire'
+        typeMastication:
+          $ref: '#/components/schemas/TypeMastication'
+        antecedentsDentaires:
+          type: string
+          nullable: true
+    UpdatePatientInput:
+      allOf:
+        - $ref: '#/components/schemas/CreatePatientInput'
+      required: []
+    TransferRequest:
+      type: object
+      required: [medecinId]
+      properties:
+        medecinId:
+          type: string
+          format: uuid
+    ValidateTransferInput:
+      type: object
+      properties:
+        approved:
+          type: boolean
+    Consultation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date-time
+        medecinId:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        patient:
+          $ref: '#/components/schemas/Patient'
+        diagnostiques:
+          type: array
+          items:
+            $ref: '#/components/schemas/Diagnostique'
+    CreateConsultationInput:
+      type: object
+      required: [date, medecinId, patient]
+      properties:
+        date:
+          type: string
+          format: date-time
+        medecinId:
+          type: string
+          format: uuid
+        patient:
+          $ref: '#/components/schemas/CreatePatientInput'
+    UpdateConsultationInput:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date-time
+        patient:
+          $ref: '#/components/schemas/CreatePatientInput'
+    DiagnosisInput:
+      type: object
+      required: [type, text, medecinId]
+      properties:
+        type:
+          type: string
+        text:
+          type: string
+        medecinId:
+          type: string
+          format: uuid
+    DiagnosisUpdateInput:
+      type: object
+      properties:
+        type:
+          type: string
+        text:
+          type: string
+        medecinId:
+          type: string
+          format: uuid
+    Diagnostique:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        text:
+          type: string
+        consultationId:
+          type: string
+          format: uuid
+        medecinId:
+          type: string
+          format: uuid
+          nullable: true
+    CreateDiagnostiqueInput:
+      $ref: '#/components/schemas/DiagnosisInput'
+    UpdateDiagnostiqueInput:
+      $ref: '#/components/schemas/DiagnosisUpdateInput'
+    Action:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/ActionType'
+        date:
+          type: string
+          format: date-time
+        medecinId:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        isValid:
+          type: boolean
+    CreateActionInput:
+      type: object
+      required: [type, date, medecinId, patientId]
+      properties:
+        type:
+          $ref: '#/components/schemas/ActionType'
+        date:
+          type: string
+          format: date-time
+        medecinId:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        isValid:
+          type: boolean
+    UpdateActionInput:
+      allOf:
+        - $ref: '#/components/schemas/CreateActionInput'
+      required: []
+    Seance:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/SeanceType'
+        date:
+          type: string
+          format: date-time
+        patientId:
+          type: string
+          format: uuid
+        medecinId:
+          type: string
+          format: uuid
+        Reevaluation:
+          $ref: '#/components/schemas/Reevaluation'
+    CreateSeanceInput:
+      type: object
+      required: [type, date, patientId, medecinId]
+      properties:
+        type:
+          $ref: '#/components/schemas/SeanceType'
+        date:
+          type: string
+          format: date-time
+        patientId:
+          type: string
+          format: uuid
+        medecinId:
+          type: string
+          format: uuid
+    UpdateSeanceInput:
+      allOf:
+        - $ref: '#/components/schemas/CreateSeanceInput'
+      required: []
+    Upload:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        originalName:
+          type: string
+        mimeType:
+          type: string
+        size:
+          type: integer
+        path:
+          type: string
+        url:
+          type: string
+    Reevaluation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        indiceDePlaque:
+          type: number
+        indiceGingivale:
+          type: number
+        seanceId:
+          type: string
+          format: uuid
+        uploads:
+          type: array
+          items:
+            $ref: '#/components/schemas/Upload'
+    CreateReevaluationInput:
+      type: object
+      required: [indiceDePlaque, indiceGingivale, patientId, medecinId, date]
+      properties:
+        indiceDePlaque:
+          type: number
+        indiceGingivale:
+          type: number
+        patientId:
+          type: string
+          format: uuid
+        medecinId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date-time
+        type:
+          type: string
+    UpdateReevaluationInput:
+      type: object
+      properties:
+        indiceDePlaque:
+          type: number
+        indiceGingivale:
+          type: number
+        seanceId:
+          type: string
+          format: uuid
+        removeUploadIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    PasswordChangeInput:
+      type: object
+      required: [newPassword]
+      properties:
+        newPassword:
+          type: string
+          format: password
+    VerifyEmailRequest:
+      type: object
+      properties:
+        redirectUri:
+          type: string
+          format: uri
+        clientId:
+          type: string
+    VerifyEmailStatus:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        verified:
+          type: boolean
+        lastVerificationDate:
+          type: string
+          format: date-time
