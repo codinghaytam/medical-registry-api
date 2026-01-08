@@ -1,8 +1,7 @@
-import KcAdminClient from '@keycloak/keycloak-admin-client';
 import { Profession, Role } from '@prisma/client';
 import prisma from '../../lib/prisma.js';
 import { ApiError } from '../../utils/apiError.js';
-import { safeKeycloakConnect } from '../../utils/keycloak.js';
+import { safeKeycloakConnect, type KeycloakAdminClient } from '../../utils/keycloak.js';
 import { logger } from '../../utils/logger.js';
 import { UserRepository } from '../users/user.repository.js';
 import { MedecinRepository } from './medecin.repository.js';

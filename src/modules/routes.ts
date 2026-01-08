@@ -1,5 +1,6 @@
 import { Express } from 'express';
 import actionsRoutes from './actions/actions.routes.js';
+import authRoutes from './auth/auth.routes.js';
 import adminRoutes from './admin/admin.routes.js';
 import consultationRoutes from './consultation/consultation.routes.js';
 import diagnostiqueRoutes from './diagnostique/diagnostique.routes.js';
@@ -14,6 +15,7 @@ import userRoutes from './users/user.routes.js';
 import verifyEmailRoutes from './verifyEmail/verify-email.routes.js';
 
 export function registerFeatureRoutes(app: Express) {
+  app.use('/auth', authRoutes);
   app.use('/users', userRoutes);
   app.use('/medecin', medecinRoutes);
   app.use('/etudiant', etudiantRoutes);

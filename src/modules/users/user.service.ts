@@ -1,12 +1,12 @@
-import KcAdminClient from '@keycloak/keycloak-admin-client';
 import { Role } from '@prisma/client';
 import prisma from '../../lib/prisma.js';
 import { ApiError } from '../../utils/apiError.js';
-import { getUserByEmail, safeKeycloakConnect } from '../../utils/keycloak.js';
+import { getUserByEmail, safeKeycloakConnect, type KeycloakAdminClient } from '../../utils/keycloak.js';
 import { logger } from '../../utils/logger.js';
 import { MedecinRepository } from '../medecin/medecin.repository.js';
 import { EtudiantRepository } from '../etudiant/etudiant.repository.js';
 import { UserRepository } from './user.repository.js';
+import { type KeycloakAdminRestClient } from '../../utils/keycloak.js';
 
 interface UserPayload {
   username: string;
@@ -49,7 +49,7 @@ export class UserService {
     return this.repository.findByEmail(email);
   }
 
-  private async getKeycloakClient(): Promise<KcAdminClient> {
+  private async getKeycloakClient(): Promise<KeycloakAdminRestClient> {
     const client = await safeKeycloakConnect();
     if (!client) {
       throw ApiError.internal('Keycloak service unavailable');
