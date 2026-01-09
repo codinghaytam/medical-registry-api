@@ -1,4 +1,4 @@
-name: Build and Deploy to Google Cloud VM
+name: Build and Deploy to AWS
 
 on:
   push:
@@ -7,6 +7,9 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/medical-registry-api
+      IMAGE_TAG: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v3
       
@@ -21,7 +24,9 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/medical-registry-api:latest
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_NAME }}:latest
           build-args: |
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             PORT=${{ secrets.PORT }}
@@ -30,98 +35,48 @@ jobs:
             KEYCLOAK_CLIENT=${{ secrets.KEYCLOAK_CLIENT }}
             KEYCLOAK_CLIENT_SECRET=${{ secrets.KEYCLOAK_CLIENT_SECRET }}
 
+      - name: Export image reference
+        id: image
+        run: echo "full_image=${IMAGE_NAME}:${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+    outputs:
+      image: ${{ steps.image.outputs.full_image }}
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+    env:
+      TF_WORKING_DIR: terraform
+      NODE_APP_IMAGE: ${{ needs.build-and-push.outputs.image }}
     steps:
       - uses: actions/checkout@v3
       
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-      
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-      
-      - name: Deploy to Google Cloud VM
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
         env:
-          GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
-          GCP_ZONE: europe-southwest1-c
-          VM_NAME: basma-vm-1
-          DOCKER_IMAGE: ${{ secrets.DOCKER_HUB_USERNAME }}/medical-registry-api:latest
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          PORT: ${{ secrets.PORT }}
-          KEYCLOAK_URL: ${{ secrets.KEYCLOAK_URL }}
-          KEYCLOAK_REALM: ${{ secrets.KEYCLOAK_REALM }}
-          KEYCLOAK_CLIENT: ${{ secrets.KEYCLOAK_CLIENT }}
-          KEYCLOAK_CLIENT_SECRET: ${{ secrets.KEYCLOAK_CLIENT_SECRET }}
-        run: |
-          # Create docker-compose file
-          cat > docker-compose.yml <<EOF
-          version: '3.8'
-          services:
-            medical-registry-api:
-              image: ${DOCKER_IMAGE}
-              container_name: medical-registry-api
-              restart: unless-stopped
-              ports:
-                - "3000:3000"
-              environment:
-                - DATABASE_URL=${DATABASE_URL}
-                - PORT=${PORT}
-                - KEYCLOAK_URL=${KEYCLOAK_URL}
-                - KEYCLOAK_REALM=${KEYCLOAK_REALM}
-                - KEYCLOAK_CLIENT=${KEYCLOAK_CLIENT}
-                - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
-                - NODE_ENV=production
-              networks:
-                - app-network
-          
-          networks:
-            app-network:
-              driver: bridge
-          EOF
-          
-          # Copy docker-compose file to VM
-          gcloud compute scp docker-compose.yml ${VM_NAME}:~/docker-compose.yml \
-            --zone=${GCP_ZONE} \
-            --project=${GCP_PROJECT}
-          
-          # Deploy on VM
-          gcloud compute ssh ${VM_NAME} \
-            --zone=${GCP_ZONE} \
-            --project=${GCP_PROJECT} \
-            --command="
-              # Pull latest image
-              docker pull ${DOCKER_IMAGE}
-              
-              # Stop and remove old container
-              docker-compose down || true
-              
-              # Start new container
-              docker-compose up -d
-              
-              # Clean up old images
-              docker image prune -af
-              
-              # Show running containers
-              docker ps
-            "
-      
-      - name: Verify Deployment
+          TF_VAR_node_app_image: ${{ env.NODE_APP_IMAGE }}
+        run: terraform plan -input=false
+
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
         env:
-          GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
-          GCP_ZONE: europe-southwest1-c
-          VM_NAME: basma-vm-1
-        run: |
-          # Wait for container to start
-          sleep 10
-          
-          # Check container health
-          gcloud compute ssh ${VM_NAME} \
-            --zone=${GCP_ZONE} \
-            --project=${GCP_PROJECT} \
-            --command="docker ps | grep medical-registry-api && echo 'Deployment successful!' || echo 'Deployment failed!'"
+          TF_VAR_node_app_image: ${{ env.NODE_APP_IMAGE }}
+        run: terraform apply -auto-approve -input=false
 
         
