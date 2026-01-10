@@ -1,6 +1,6 @@
 import { Profession, SeanceType } from '@prisma/client';
 import { ApiError } from '../../utils/apiError.js';
-import { safeKeycloakConnect, type KeycloakAdminClient } from '../../utils/keycloak.js';
+import { safeKeycloakConnect, type KeycloakAdminClient, type KcAdminClient } from '../../utils/keycloak.js';
 import { MedecinRepository } from '../medecin/medecin.repository.js';
 import { SeanceRepository } from './seance.repository.js';
 

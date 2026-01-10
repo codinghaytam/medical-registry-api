@@ -1,5 +1,6 @@
 import type { Express } from 'express';
 import { unlink } from 'fs/promises';
+import { SeanceType } from '@prisma/client';
 import prisma from '../../lib/prisma.js';
 import { ApiError } from '../../utils/apiError.js';
 import { ReevaluationRepository } from './reevaluation.repository.js';
@@ -89,7 +90,7 @@ export class ReevaluationService {
     const result = await prisma.$transaction(async (tx) => {
       const seance = await tx.seance.create({
         data: {
-          type: payload.type ?? 'REEVALUATION',
+          type: (payload.type ?? 'REEVALUATION') as SeanceType,
           date: payload.date,
           patient: { connect: { id: payload.patientId } },
           medecin: { connect: { id: payload.medecinId } }

@@ -16,7 +16,8 @@ const storage = new Storage({
 const bucket = storage.bucket(config.GCS_BUCKET_NAME);
 
 // Configure multer to use Google Cloud Storage
-const gcsStorage = new MulterGoogleStorage({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const gcsStorage = new (MulterGoogleStorage as any)({
   bucket: config.GCS_BUCKET_NAME,
   projectId: config.GCS_PROJECT_ID,
   credentials: JSON.parse(config.GCS_SA_KEY),

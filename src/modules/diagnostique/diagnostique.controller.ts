@@ -25,7 +25,7 @@ export class DiagnostiqueController {
   };
 
   deleteDiagnostique = async (req: Request, res: Response) => {
-    await this.service.delete(req.params.id as string);
+    await this.service.remove(req.params.id as string);
     res.status(204).send();
   };
 }

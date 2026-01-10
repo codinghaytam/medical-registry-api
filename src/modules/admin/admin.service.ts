@@ -1,6 +1,6 @@
 import { Role } from '@prisma/client';
 import { ApiError } from '../../utils/apiError.js';
-import { getUserByEmail, safeKeycloakConnect, type KeycloakAdminClient } from '../../utils/keycloak.js';
+import { getUserByEmail, safeKeycloakConnect, type KeycloakAdminClient, type KcAdminClient } from '../../utils/keycloak.js';
 import { logger } from '../../utils/logger.js';
 import { UserRepository } from '../users/user.repository.js';
 
