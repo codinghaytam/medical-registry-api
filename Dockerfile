@@ -39,5 +39,5 @@ RUN set -e && \
     echo "GCS_SA_KEY=${GCS_SA_KEY}" >> .env
 
 # Start the application
-CMD npx prisma generate && npx prisma migrate deploy && npx tsc && npm run telemetry:start && npm run start
+CMD npx prisma generate && npx prisma migrate deploy && npx tsc && npm run start
 EXPOSE 3000
