@@ -8,14 +8,29 @@ import { getEnvironmentConfig } from "./config.js";
 const config = getEnvironmentConfig();
 
 const parseCredentials = (credentials: string) => {
+  if (!credentials) return {};
   try {
     return JSON.parse(credentials);
   } catch (error) {
-    // Attempt to fix common JSON issues like single quotes
+    console.warn("⚠️ GCS_SA_KEY JSON parse failed. Attempting auto-repair...");
     try {
-      return JSON.parse(credentials.replace(/'/g, '"'));
-    } catch {
-       // If that fails, throw the original error
+      // Repair strategy:
+      // 1. Replace single quotes with double quotes
+      // 2. Wrap unquoted keys in double quotes
+      let fixed = credentials
+        .replace(/'/g, '"')
+        .replace(/([{,]\s*)([a-zA-Z0-9_]+?)\s*:/g, '$1"$2":');
+      
+      const parsed = JSON.parse(fixed);
+      console.log("✅ GCS_SA_KEY auto-repaired successfully.");
+      return parsed;
+    } catch (finalError) {
+       console.error("❌ CRITICAL: Failed to parse GCS_SA_KEY environment variable.");
+       console.error("Original Error:", error instanceof Error ? error.message : error);
+       console.error("Repair Error:", finalError instanceof Error ? finalError.message : finalError);
+       // Log masked snippet
+       const snippet = credentials.length > 50 ? credentials.substring(0, 50) + "..." : credentials;
+       console.error(`Input Start: [${snippet}]`);
        throw error;
     }
   }
