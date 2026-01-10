@@ -8,6 +8,9 @@ ARG KEYCLOAK_URL
 ARG KEYCLOAK_REALM
 ARG KEYCLOAK_CLIENT
 ARG KEYCLOAK_CLIENT_SECRET
+ARG GCS_BUCKET_NAME
+ARG GCS_PROJECT_ID
+ARG GCS_SA_KEY
 
 
 # Copy package files and install dependencies
@@ -30,7 +33,10 @@ RUN set -e && \
     echo "KEYCLOAK_REALM=${KEYCLOAK_REALM}" >> .env && \
     echo "KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT}" >> .env && \
     echo "KEYCLOAK_BASE_URL=${KEYCLOAK_URL}" >> .env && \
-    echo "KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}" >> .env
+    echo "KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}" >> .env && \
+    echo "GCS_BUCKET_NAME=${GCS_BUCKET_NAME}" >> .env && \
+    echo "GCS_PROJECT_ID=${GCS_PROJECT_ID}" >> .env && \
+    echo "GCS_SA_KEY=${GCS_SA_KEY}" >> .env
 
 # Start the application
 CMD npx prisma generate && npx prisma migrate deploy && npx tsc && npm run telemetry:start && npm run start

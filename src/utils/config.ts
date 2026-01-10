@@ -28,11 +28,14 @@ interface EnvironmentConfig {
   
   // JWT
   JWT_EXPIRES_IN: string;
-  JWT_SECRET: string;
   
   // File upload
   MAX_FILE_SIZE: string;
-  UPLOAD_PATH: string;
+
+  // Google Cloud Storage
+  GCS_BUCKET_NAME: string;
+  GCS_PROJECT_ID: string;
+  GCS_SA_KEY: string;
   
   // Logging
   LOG_LEVEL: 'error' | 'warn' | 'info' | 'debug';
@@ -48,7 +51,10 @@ export function getEnvironmentConfig(): EnvironmentConfig {
     'KEYCLOAK_BASE_URL',
     'KEYCLOAK_REALM',
     'KEYCLOAK_CLIENT_ID',
-    'KEYCLOAK_CLIENT_SECRET'
+    'KEYCLOAK_CLIENT_SECRET',
+    'GCS_BUCKET_NAME',
+    'GCS_PROJECT_ID',
+    'GCS_SA_KEY'
   ];
 
   const missing = requiredVars.filter(varName => !process.env[varName]);
@@ -78,11 +84,6 @@ export function getEnvironmentConfig(): EnvironmentConfig {
     throw new Error('LOG_LEVEL must be one of: error, warn, info, debug');
   }
 
-  // Validate JWT_SECRET in production
-  if (nodeEnv === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32)) {
-    throw new Error('JWT_SECRET must be at least 32 characters long in production');
-  }
-
   return {
     DATABASE_URL: process.env.DATABASE_URL!,
     PORT: parseInt(process.env.PORT || '3000'),
@@ -95,9 +96,10 @@ export function getEnvironmentConfig(): EnvironmentConfig {
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
     CORS_ORIGINS: corsOrigins,
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
-    JWT_SECRET: process.env.JWT_SECRET || 'default-dev-secret-change-in-production',
     MAX_FILE_SIZE: process.env.MAX_FILE_SIZE || '10MB',
-    UPLOAD_PATH: process.env.UPLOAD_PATH || './upload',
+    GCS_BUCKET_NAME: process.env.GCS_BUCKET_NAME!,
+    GCS_PROJECT_ID: process.env.GCS_PROJECT_ID!,
+    GCS_SA_KEY: process.env.GCS_SA_KEY!,
     LOG_LEVEL: logLevel
   };
 }
@@ -114,7 +116,7 @@ export function logConfiguration(config: EnvironmentConfig): void {
   console.log(`  Keycloak Realm: ${config.KEYCLOAK_REALM}`);
   console.log(`  Keycloak Client: ${config.KEYCLOAK_CLIENT_ID}`);
   console.log(`  CORS Origins: ${config.CORS_ORIGINS.join(', ')}`);
-  console.log(`  Upload Path: ${config.UPLOAD_PATH}`);
+  console.log(`  GCS Bucket: ${config.GCS_BUCKET_NAME}`);
   console.log(`  Max File Size: ${config.MAX_FILE_SIZE}`);
   console.log(`  Log Level: ${config.LOG_LEVEL}`);
   console.log(`  JWT Expires: ${config.JWT_EXPIRES_IN}`);
