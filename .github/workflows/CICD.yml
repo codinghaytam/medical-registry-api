@@ -49,19 +49,6 @@ jobs:
       - name: checkout code
         run: ls
       - name: Update DigitalOcean App with new image
-
-
-
-
-
-
-
-
-
-
-
-
-
         run: |
           # Update the App Platform spec. Ensure your `app.yaml` references the image name or
           # uses `registry: haytamd44/medical-registry-api` so the new image tags are picked up.
