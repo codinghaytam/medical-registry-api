@@ -18,7 +18,7 @@ interface SeanceUpdatePayload {
   medecinId?: string;
 }
 
-const PARO_ONLY_TYPES: SeanceType[] = ['DETARTRAGE', 'SURFACAGE', 'REEVALUATION'];
+const PARO_ONLY_TYPES: SeanceType[] = ['REEVALUATION'];
 const ORTHO_ONLY_TYPES: SeanceType[] = [
   'ACTIVATION',
   'DEBUT_DE_TRAITEMENT',

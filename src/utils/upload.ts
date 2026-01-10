@@ -7,10 +7,26 @@ import { getEnvironmentConfig } from "./config.js";
 
 const config = getEnvironmentConfig();
 
+const parseCredentials = (credentials: string) => {
+  try {
+    return JSON.parse(credentials);
+  } catch (error) {
+    // Attempt to fix common JSON issues like single quotes
+    try {
+      return JSON.parse(credentials.replace(/'/g, '"'));
+    } catch {
+       // If that fails, throw the original error
+       throw error;
+    }
+  }
+};
+
+const credentials = parseCredentials(config.GCS_SA_KEY);
+
 // Initialize Google Cloud Storage
 const storage = new Storage({
   projectId: config.GCS_PROJECT_ID,
-  credentials: JSON.parse(config.GCS_SA_KEY)
+  credentials
 });
 
 const bucket = storage.bucket(config.GCS_BUCKET_NAME);
@@ -20,7 +36,7 @@ const bucket = storage.bucket(config.GCS_BUCKET_NAME);
 const gcsStorage = new (MulterGoogleStorage as any)({
   bucket: config.GCS_BUCKET_NAME,
   projectId: config.GCS_PROJECT_ID,
-  credentials: JSON.parse(config.GCS_SA_KEY),
+  credentials,
   filename: (req: Request, file: Express.Multer.File, cb: (err: any, filename?: string) => void) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
