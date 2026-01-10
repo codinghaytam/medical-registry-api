@@ -35,11 +35,6 @@ jobs:
             GCS_PROJECT_ID=${{ secrets.GCS_PROJECT_ID }}
             GCS_SA_KEY=${{ secrets.GCS_SA_KEY }}
 
-            STORAGE_BUCKET=${{ secrets.STORAGE_BUCKET }}
-            CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}
-            UPLOAD_PATH=${{ secrets.UPLOAD_PATH }}
-            NODE_ENV=production
-
           
   deploy:
     needs: build-and-push
