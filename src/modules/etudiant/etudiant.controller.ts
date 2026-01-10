@@ -10,7 +10,7 @@ export class EtudiantController {
   };
 
   getEtudiant = async (req: Request, res: Response) => {
-    const etudiant = await this.service.getById(req.params.id);
+    const etudiant = await this.service.getById(req.params.id as string);
     res.status(200).json(etudiant);
   };
 
@@ -20,12 +20,12 @@ export class EtudiantController {
   };
 
   updateEtudiant = async (req: Request, res: Response) => {
-    const etudiant = await this.service.update(req.params.id, req.body);
+    const etudiant = await this.service.update(req.params.id as string, req.body);
     res.status(200).json(etudiant);
   };
 
   deleteEtudiant = async (req: Request, res: Response) => {
-    await this.service.delete(req.params.id);
+    await this.service.delete(req.params.id as string);
     res.status(204).send();
   };
 }

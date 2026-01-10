@@ -20,7 +20,7 @@ const gcsStorage = new MulterGoogleStorage({
   bucket: config.GCS_BUCKET_NAME,
   projectId: config.GCS_PROJECT_ID,
   credentials: JSON.parse(config.GCS_SA_KEY),
-  filename: (req, file, cb) => {
+  filename: (req: Request, file: Express.Multer.File, cb: (err: any, filename?: string) => void) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
     cb(null, file.fieldname + "-" + uniqueSuffix + ext);
@@ -31,7 +31,7 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
   if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
     cb(null, true);
   } else {
-    cb(new Error("Invalid file type, only JPEG and PNG is allowed!"), false);
+    cb(new Error("Invalid file type, only JPEG and PNG is allowed!"));
   }
 };
 

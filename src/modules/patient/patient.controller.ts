@@ -10,7 +10,7 @@ export class PatientController {
   };
 
   getPatient = async (req: Request, res: Response) => {
-    const patient = await this.service.getById(req.params.id);
+    const patient = await this.service.getById(req.params.id as string);
     res.status(200).json(patient);
   };
 
@@ -20,27 +20,27 @@ export class PatientController {
   };
 
   updatePatient = async (req: Request, res: Response) => {
-    const patient = await this.service.update(req.params.id, req.body);
+    const patient = await this.service.update(req.params.id as string, req.body);
     res.status(200).json(patient);
   };
 
   deletePatient = async (req: Request, res: Response) => {
-    await this.service.remove(req.params.id);
+    await this.service.remove(req.params.id as string);
     res.status(204).send();
   };
 
   transferParoToOrtho = async (req: Request, res: Response) => {
-    const patient = await this.service.transferParoToOrtho(req.params.id, req.body.medecinId);
+    const patient = await this.service.transferParoToOrtho(req.params.id as string, req.body.medecinId);
     res.status(200).json({ message: 'Patient transferred to Orthodontic service', patient });
   };
 
   transferOrthoToParo = async (req: Request, res: Response) => {
-    const patient = await this.service.transferOrthoToParo(req.params.id, req.body.medecinId);
+    const patient = await this.service.transferOrthoToParo(req.params.id as string, req.body.medecinId);
     res.status(200).json({ message: 'Patient transferred to Periodontal service', patient });
   };
 
   validateTransfer = async (req: Request, res: Response) => {
-    const result = await this.service.validateTransfer(req.params.actionId);
+    const result = await this.service.validateTransfer(req.params.actionId as string);
     res.status(200).json({
       message: 'Transfer to Orthodontic service validated successfully',
       ...result

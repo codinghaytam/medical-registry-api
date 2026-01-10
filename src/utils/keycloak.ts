@@ -220,6 +220,7 @@ export class KeycloakAdminRestClient {
 }
 
 export type KeycloakAdminClient = KeycloakAdminRestClient;
+export type KcAdminClient = KeycloakAdminRestClient;
 
 let keycloakConnection: KeycloakAdminRestClient | null = null;
 

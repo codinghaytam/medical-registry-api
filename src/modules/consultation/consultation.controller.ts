@@ -10,7 +10,7 @@ export class ConsultationController {
   };
 
   getConsultation = async (req: Request, res: Response) => {
-    const consultation = await this.service.getById(req.params.id);
+    const consultation = await this.service.getById(req.params.id as string);
     res.status(200).json(consultation);
   };
 
@@ -23,12 +23,12 @@ export class ConsultationController {
   };
 
   addDiagnosis = async (req: Request, res: Response) => {
-    const diagnosis = await this.service.addDiagnosis(req.params.id, req.body);
+    const diagnosis = await this.service.addDiagnosis(req.params.id as string, req.body);
     res.status(201).json(diagnosis);
   };
 
   updateConsultation = async (req: Request, res: Response) => {
-    const consultation = await this.service.update(req.params.id, {
+    const consultation = await this.service.update(req.params.id as string, {
       ...req.body,
       date: req.body.date ? new Date(req.body.date) : undefined
     });
@@ -36,12 +36,12 @@ export class ConsultationController {
   };
 
   updateDiagnosis = async (req: Request, res: Response) => {
-    const diagnosis = await this.service.updateDiagnosis(req.params.diagnosisId, req.body);
+    const diagnosis = await this.service.updateDiagnosis(req.params.diagnosisId as string, req.body);
     res.status(200).json(diagnosis);
   };
 
   deleteConsultation = async (req: Request, res: Response) => {
-    await this.service.remove(req.params.id);
+    await this.service.remove(req.params.id as string);
     res.status(204).send();
   };
 }

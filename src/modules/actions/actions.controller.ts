@@ -10,7 +10,7 @@ export class ActionsController {
   };
 
   getAction = async (req: Request, res: Response) => {
-    const action = await this.service.getById(req.params.id);
+    const action = await this.service.getById(req.params.id as string);
     res.status(200).json(action);
   };
 
@@ -23,7 +23,7 @@ export class ActionsController {
   };
 
   updateAction = async (req: Request, res: Response) => {
-    const action = await this.service.update(req.params.id, {
+    const action = await this.service.update(req.params.id as string, {
       ...req.body,
       date: req.body.date ? new Date(req.body.date) : undefined
     });
@@ -31,12 +31,12 @@ export class ActionsController {
   };
 
   deleteAction = async (req: Request, res: Response) => {
-    await this.service.delete(req.params.id);
+    await this.service.delete(req.params.id as string);
     res.status(204).send();
   };
 
   validateTransferToOrtho = async (req: Request, res: Response) => {
-    const result = await this.service.validateTransferToOrtho(req.params.id);
+    const result = await this.service.validateTransferToOrtho(req.params.id as string);
     res.status(200).json({
       message: 'Transfer to Orthodontic service validated successfully',
       ...result
@@ -44,7 +44,7 @@ export class ActionsController {
   };
 
   validateTransferToParo = async (req: Request, res: Response) => {
-    const result = await this.service.validateTransferToParo(req.params.id);
+    const result = await this.service.validateTransferToParo(req.params.id as string);
     res.status(200).json({
       message: 'Transfer to Periodontal service validated successfully',
       ...result

@@ -10,7 +10,7 @@ export class DiagnostiqueController {
   };
 
   getDiagnostique = async (req: Request, res: Response) => {
-    const diagnostique = await this.service.getById(req.params.id);
+    const diagnostique = await this.service.getById(req.params.id as string);
     res.status(200).json(diagnostique);
   };
 
@@ -20,12 +20,12 @@ export class DiagnostiqueController {
   };
 
   updateDiagnostique = async (req: Request, res: Response) => {
-    const diagnostique = await this.service.update(req.params.id, req.body);
+    const diagnostique = await this.service.update(req.params.id as string, req.body);
     res.status(200).json(diagnostique);
   };
 
   deleteDiagnostique = async (req: Request, res: Response) => {
-    await this.service.remove(req.params.id);
+    await this.service.delete(req.params.id as string);
     res.status(204).send();
   };
 }

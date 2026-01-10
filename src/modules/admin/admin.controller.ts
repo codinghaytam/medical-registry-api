@@ -10,12 +10,12 @@ export class AdminController {
   };
 
   getAdminByEmail = async (req: Request, res: Response) => {
-    const admin = await this.service.getByEmail(req.params.email);
+    const admin = await this.service.getByEmail(req.params.email as string);
     res.status(200).json(admin);
   };
 
   getAdminById = async (req: Request, res: Response) => {
-    const admin = await this.service.getById(req.params.id);
+    const admin = await this.service.getById(req.params.id as string);
     res.status(200).json(admin);
   };
 
@@ -25,12 +25,12 @@ export class AdminController {
   };
 
   updateAdmin = async (req: Request, res: Response) => {
-    const admin = await this.service.update(req.params.id, req.body);
+    const admin = await this.service.update(req.params.id as string, req.body);
     res.status(200).json(admin);
   };
 
   deleteAdmin = async (req: Request, res: Response) => {
-    await this.service.delete(req.params.id);
+    await this.service.delete(req.params.id as string);
     res.status(204).send();
   };
 }

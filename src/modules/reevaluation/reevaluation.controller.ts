@@ -11,7 +11,7 @@ export class ReevaluationController {
   };
 
   getReevaluation = async (req: Request, res: Response) => {
-    const reevaluation = await this.service.getById(req.params.id);
+    const reevaluation = await this.service.getById(req.params.id as string);
     res.status(200).json(reevaluation);
   };
 
@@ -38,7 +38,7 @@ export class ReevaluationController {
         : undefined;
 
     const reevaluation = await this.service.update(
-      req.params.id,
+      req.params.id as string,
       {
         indiceDePlaque: req.body.indiceDePlaque ? parseFloat(req.body.indiceDePlaque) : undefined,
         indiceGingivale: req.body.indiceGingivale ? parseFloat(req.body.indiceGingivale) : undefined,
@@ -51,7 +51,7 @@ export class ReevaluationController {
   };
 
   deleteReevaluation = async (req: Request, res: Response) => {
-    await this.service.remove(req.params.id);
+    await this.service.remove(req.params.id as string);
     res.status(204).send();
   };
 }

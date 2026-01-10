@@ -39,6 +39,10 @@ export class VerifyEmailService {
     const kc = await this.getKeycloakClient();
     const kcUser = await this.getKeycloakUser(email);
 
+    if (!kcUser.id) {
+        throw ApiError.internal('Keycloak user ID missing');
+    }
+
     await kc.users.sendVerifyEmail({ id: kcUser.id, ...options });
 
     return {
@@ -71,6 +75,10 @@ export class VerifyEmailService {
     await this.ensureDbUser(email);
     const kc = await this.getKeycloakClient();
     const kcUser = await this.getKeycloakUser(email);
+
+    if (!kcUser.id) {
+        throw ApiError.internal('Keycloak user ID missing');
+    }
 
     await kc.users.update({ id: kcUser.id }, { emailVerified: true });
 
