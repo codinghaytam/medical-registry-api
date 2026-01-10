@@ -1,10 +1,147 @@
-import KcAdminClient from '@keycloak/keycloak-admin-client';
-import * as dotenv from "dotenv";
+import axios from 'axios';
+import * as dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import jwksClient from 'jwks-rsa';
+import { UserRepository } from '../modules/users/user.repository.js';
 dotenv.config();
+const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 5 * 1000;
+const userRepository = new UserRepository();
+export class KeycloakAdminRestClient {
+    config;
+    http;
+    accessToken = null;
+    tokenExpiresAt = 0;
+    authenticating = null;
+    constructor(config, timeout = 10_000) {
+        this.config = config;
+        this.http = axios.create({
+            baseURL: this.config.baseUrl,
+            timeout
+        });
+    }
+    /**
+     * Ensures we have a valid access token before issuing API calls.
+     */
+    async ensureAuthenticated() {
+        await this.ensureToken();
+    }
+    users = {
+        find: (params = {}) => this.findUsers(params),
+        findOne: ({ id }) => this.findUserById(id),
+        create: (payload) => this.createUser(payload),
+        update: ({ id }, data) => this.updateUser(id, data),
+        resetPassword: ({ id, credential }) => this.resetPassword(id, credential),
+        del: ({ id }) => this.deleteUser(id),
+        sendVerifyEmail: (options) => this.sendVerifyEmail(options)
+    };
+    get realmBasePath() {
+        return `/admin/realms/${this.config.realm}`;
+    }
+    async authenticate() {
+        const tokenUrl = `${this.config.baseUrl}/realms/${this.config.realm}/protocol/openid-connect/token`;
+        const body = new URLSearchParams({
+            grant_type: 'client_credentials',
+            client_id: this.config.clientId,
+            client_secret: this.config.clientSecret
+        });
+        const response = await this.http.post(tokenUrl.replace(this.config.baseUrl, ''), body.toString(), {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        const expiresInSeconds = response.data.expires_in ?? 60;
+        this.accessToken = response.data.access_token;
+        this.tokenExpiresAt = Date.now() + expiresInSeconds * 1000 - TOKEN_EXPIRY_SAFETY_WINDOW_MS;
+    }
+    async ensureToken() {
+        const tokenValid = this.accessToken && Date.now() < this.tokenExpiresAt;
+        if (tokenValid) {
+            return;
+        }
+        if (!this.authenticating) {
+            this.authenticating = this.authenticate().finally(() => {
+                this.authenticating = null;
+            });
+        }
+        await this.authenticating;
+    }
+    async authorizedRequest(config) {
+        await this.ensureToken();
+        const headers = {
+            Authorization: `Bearer ${this.accessToken}`,
+            Accept: 'application/json',
+            ...config.headers
+        };
+        try {
+            return await this.http.request({ ...config, headers });
+        }
+        catch (error) {
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                // Token likely expired unexpectedly, force refresh once.
+                this.accessToken = null;
+                this.tokenExpiresAt = 0;
+                await this.ensureToken();
+                return this.http.request({ ...config, headers: { ...headers, Authorization: `Bearer ${this.accessToken}` } });
+            }
+            throw error;
+        }
+    }
+    async findUsers(params) {
+        const response = await this.authorizedRequest({
+            method: 'get',
+            url: `${this.realmBasePath}/users`,
+            params
+        });
+        return response.data;
+    }
+    async findUserById(id) {
+        const response = await this.authorizedRequest({
+            method: 'get',
+            url: `${this.realmBasePath}/users/${id}`
+        });
+        return response.data;
+    }
+    async createUser(payload) {
+        const response = await this.authorizedRequest({
+            method: 'post',
+            url: `${this.realmBasePath}/users`,
+            data: payload,
+            validateStatus: (status) => status >= 200 && status < 400
+        });
+        const locationHeader = response.headers?.location || response.headers?.Location;
+        const idFromLocation = locationHeader ? locationHeader.split('/').pop() : undefined;
+        return { id: idFromLocation };
+    }
+    async updateUser(id, data) {
+        await this.authorizedRequest({
+            method: 'put',
+            url: `${this.realmBasePath}/users/${id}`,
+            data
+        });
+    }
+    async resetPassword(id, credential) {
+        await this.authorizedRequest({
+            method: 'put',
+            url: `${this.realmBasePath}/users/${id}/reset-password`,
+            data: credential
+        });
+    }
+    async deleteUser(id) {
+        await this.authorizedRequest({
+            method: 'delete',
+            url: `${this.realmBasePath}/users/${id}`
+        });
+    }
+    async sendVerifyEmail({ id, clientId, redirectUri }) {
+        await this.authorizedRequest({
+            method: 'put',
+            url: `${this.realmBasePath}/users/${id}/send-verify-email`,
+            params: {
+                client_id: clientId ?? this.config.clientId,
+                redirect_uri: redirectUri
+            }
+        });
+    }
+}
 let keycloakConnection = null;
-const TOKEN_REFRESH_INTERVAL = 58 * 1000; // 58 seconds
 // Validate required environment variables
 const requiredEnvVars = ['KEYCLOAK_BASE_URL', 'KEYCLOAK_REALM', 'KEYCLOAK_CLIENT_ID', 'KEYCLOAK_CLIENT_SECRET'];
 for (const envVar of requiredEnvVars) {
@@ -12,37 +149,17 @@ for (const envVar of requiredEnvVars) {
         throw new Error(`Missing required environment variable: ${envVar}`);
     }
 }
-const kcAdminClient = new KcAdminClient();
-kcAdminClient.setConfig({
-    realmName: process.env.KEYCLOAK_REALM,
-    baseUrl: process.env.KEYCLOAK_BASE_URL,
-});
 export async function connectToKeycloak() {
-    if (keycloakConnection) {
-        return keycloakConnection;
-    }
-    try { // Using client credentials instead of user password
-        await kcAdminClient.auth({
-            grantType: 'client_credentials',
+    if (!keycloakConnection) {
+        keycloakConnection = new KeycloakAdminRestClient({
+            baseUrl: process.env.KEYCLOAK_BASE_URL,
+            realm: process.env.KEYCLOAK_REALM,
             clientId: process.env.KEYCLOAK_CLIENT_ID,
             clientSecret: process.env.KEYCLOAK_CLIENT_SECRET
         });
-        const refreshInterval = setInterval(async () => {
-            try {
-                // Using client credentials for refresh as well
-                await kcAdminClient.auth({
-                    grantType: 'client_credentials',
-                    clientId: process.env.KEYCLOAK_CLIENT_ID,
-                    clientSecret: process.env.KEYCLOAK_CLIENT_SECRET
-                });
-            }
-            catch (error) {
-                console.error('Failed to refresh Keycloak token:', error);
-                keycloakConnection = null;
-                clearInterval(refreshInterval);
-            }
-        }, TOKEN_REFRESH_INTERVAL);
-        keycloakConnection = kcAdminClient;
+    }
+    try {
+        await keycloakConnection.ensureAuthenticated();
         return keycloakConnection;
     }
     catch (error) {
@@ -138,6 +255,31 @@ export async function getUserByUsernameOrEmail(usernameOrEmail, res) {
  * @param res Express response object
  * @param next Express next function
  */
+async function enrichDecodedPayload(decoded) {
+    const normalizedRoles = new Set();
+    decoded.realm_access?.roles?.forEach((role) => normalizedRoles.add(role));
+    if (decoded.resource_access) {
+        Object.values(decoded.resource_access).forEach((resource) => {
+            resource?.roles?.forEach((role) => normalizedRoles.add(role));
+        });
+    }
+    let fallbackRole = null;
+    let dbUserId = null;
+    if (normalizedRoles.size === 0 && decoded.email) {
+        const dbUser = await userRepository.findByEmail(decoded.email);
+        if (dbUser) {
+            fallbackRole = dbUser.role;
+            dbUserId = dbUser.id;
+            normalizedRoles.add(dbUser.role);
+        }
+    }
+    return {
+        ...decoded,
+        roles: Array.from(normalizedRoles),
+        fallbackRole,
+        dbUserId
+    };
+}
 export async function validateKeycloakToken(req, res, next) {
     try {
         const authHeader = req.headers.authorization;
@@ -162,8 +304,15 @@ export async function validateKeycloakToken(req, res, next) {
                 message: 'Invalid or expired token'
             });
         }
+        if (typeof decoded === 'string') {
+            return res.status(401).json({
+                error: 'Unauthorized',
+                message: 'Invalid token payload'
+            });
+        }
+        const enrichedPayload = await enrichDecodedPayload(decoded);
         // Add user info to request object for use in routes
-        req.user = decoded;
+        req.user = enrichedPayload;
         next();
     }
     catch (error) {
@@ -194,6 +343,9 @@ export async function verifyKeycloakToken(token) {
             algorithms: ['RS256'],
             issuer: `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}`
         });
+        if (typeof verified === 'string') {
+            return null;
+        }
         return verified;
     }
     catch (error) {

@@ -1,65 +1,36 @@
 import multer from "multer";
-import fs from "fs";
+import { Storage } from "@google-cloud/storage";
+import MulterGoogleStorage from "multer-google-storage";
 import path from "path";
-// Configure storage for initialUpload
-const initialStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = path.join(__dirname, "../../../upload");
-        // Ensure the upload directory exists
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
+import { getEnvironmentConfig } from "./config.js";
+const config = getEnvironmentConfig();
+// Initialize Google Cloud Storage
+const storage = new Storage({
+    projectId: config.GCS_PROJECT_ID,
+    credentials: JSON.parse(config.GCS_SA_KEY)
+});
+const bucket = storage.bucket(config.GCS_BUCKET_NAME);
+// Configure multer to use Google Cloud Storage
+const gcsStorage = new MulterGoogleStorage({
+    bucket: config.GCS_BUCKET_NAME,
+    projectId: config.GCS_PROJECT_ID,
+    credentials: JSON.parse(config.GCS_SA_KEY),
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
         const ext = path.extname(file.originalname);
         cb(null, file.fieldname + "-" + uniqueSuffix + ext);
     }
 });
-const initialUpload = multer({
-    storage: initialStorage,
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
-            cb(null, true);
-        }
-        else {
-            cb(null, false);
-        }
-    },
-    limits: {
-        fileSize: 1024 * 1024 * 5 // 5MB max file size
-    }
-});
-// Configure storage destination and filename
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = path.join(__dirname, "../../../images");
-        // Ensure the upload directory exists
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-        const ext = path.extname(file.originalname);
-        cb(null, file.fieldname + "-" + uniqueSuffix + ext);
-    }
-});
-// File filter to only allow jpg and png
 const fileFilter = (req, file, cb) => {
-    // Accept only jpg and png files
     if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
         cb(null, true);
     }
     else {
-        cb(null, false);
+        cb(new Error("Invalid file type, only JPEG and PNG is allowed!"), false);
     }
 };
-// Configure multer upload
 const upload = multer({
-    storage: storage,
+    storage: gcsStorage,
     fileFilter: fileFilter,
     limits: {
         fileSize: 1024 * 1024 * 5 // 5MB max file size
@@ -68,28 +39,31 @@ const upload = multer({
 // Method to upload a single image
 const uploadSingleImage = upload.single("sondagePhoto");
 // Method to upload multiple images
-// Method to delete a file
-const deleteFile = (filePath) => {
-    return new Promise((resolve, reject) => {
-        const fullPath = path.join(__dirname, "../upload", filePath);
-        fs.unlink(fullPath, (err) => {
-            if (err) {
-                reject(false);
-                return;
-            }
-            resolve(true);
-        });
-    });
+const uploadMultipleImages = upload.array("sondagePhotos", 10);
+// Method to delete a file from GCS
+const deleteFile = async (filePath) => {
+    try {
+        // filePath is the full name/path of the object in the bucket
+        await bucket.file(filePath).delete();
+        return true;
+    }
+    catch (error) {
+        console.error(`Failed to delete file ${filePath} from GCS:`, error);
+        return false;
+    }
 };
 // Method to update a file (delete old and upload new)
 const updateFile = async (oldFilePath, req, res) => {
     try {
-        // Delete the old file
-        await deleteFile(oldFilePath);
+        // Delete the old file if it exists
+        if (oldFilePath) {
+            await deleteFile(oldFilePath);
+        }
         // Upload the new file
         return new Promise((resolve, reject) => {
             uploadSingleImage(req, res, (err) => {
                 if (err) {
+                    console.error("Error uploading new file during update:", err);
                     reject(null);
                     return;
                 }
@@ -97,11 +71,13 @@ const updateFile = async (oldFilePath, req, res) => {
                     reject(null);
                     return;
                 }
+                // The filename from multer-google-storage is the object name in the bucket
                 resolve(req.file.filename);
             });
         });
     }
     catch (error) {
+        console.error("Error updating file:", error);
         return null;
     }
 };
@@ -142,4 +118,4 @@ const uploadImagePromise = (req, res) => {
         });
     });
 };
-export { upload, uploadSingleImage, deleteFile, updateFile, isValidImageFile, getFileExtension, deleteImageIfExists, uploadImagePromise };
+export { upload, uploadSingleImage, uploadMultipleImages, deleteFile, updateFile, isValidImageFile, getFileExtension, deleteImageIfExists, uploadImagePromise };

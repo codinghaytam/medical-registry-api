@@ -1,0 +1,608 @@
+{
+	"info": {
+		"_postman_id": "4b5d6e7f-8a9b-4c2d-3e4f-5a6b7c8d9e0f",
+		"name": "Medical Registry API",
+		"description": "Postman collection for the Medical Registry API testing.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Signup",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.accessToken) {",
+									"    pm.environment.set(\"accessToken\", jsonData.accessToken);",
+									"    pm.environment.set(\"refreshToken\", jsonData.refreshToken);",
+									"    pm.environment.set(\"userId\", jsonData.user.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"testuser_{{$timestamp}}\",\n    \"email\": \"test_{{$timestamp}}@example.com\",\n    \"pwd\": \"Password123!\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"role\": \"MEDECIN\",\n    \"phone\": \"1234567890\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/signup",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.accessToken) {",
+									"    pm.environment.set(\"accessToken\", jsonData.accessToken);",
+									"    pm.environment.set(\"refreshToken\", jsonData.refreshToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"Password123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.accessToken) {",
+									"    pm.environment.set(\"accessToken\", jsonData.accessToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/refresh",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								"{{userId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Medecins Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/medecins",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								"medecins"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Patients",
+			"item": [
+				{
+					"name": "Create Patient",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.id) {",
+									"    pm.environment.set(\"patientId\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nom\": \"Smith\",\n  \"prenom\": \"Jane\",\n  \"adresse\": \"123 Main St\",\n  \"tel\": \"5551234567\",\n  \"numeroDeDossier\": \"PAT-{{$timestamp}}\",\n  \"motifConsultation\": \"ESTHETIQUE\",\n  \"hygieneBuccoDentaire\": \"BONNE\",\n  \"typeMastication\": \"BILATERALE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/patient",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"patient"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Patients",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/patient",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"patient"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Patient By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/patient/{{patientId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"patient",
+								"{{patientId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Patient",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"adresse\": \"456 Elm St\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/patient/{{patientId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"patient",
+								"{{patientId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Consultations",
+			"item": [
+				{
+					"name": "Create Consultation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.id) {",
+									"    pm.environment.set(\"consultationId\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"date\": \"{{$isoTimestamp}}\",\n    \"medecinId\": \"{{medecinId}}\",\n    \"patient\": {\n        \"nom\": \"Consultation Patient\",\n        \"prenom\": \"Test\",\n        \"adresse\": \"123 Test Ave\",\n        \"tel\": \"1234567890\",\n        \"numeroDeDossier\": \"CONS-{{$timestamp}}\",\n        \"motifConsultation\": \"FONCTIONNELLE\",\n        \"hygieneBuccoDentaire\": \"MOYENNE\",\n        \"typeMastication\": \"UNILATERALE_STRICTE\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/consultation",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"consultation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Consultations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/consultation",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"consultation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Diagnosis",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"General\",\n    \"text\": \"Patient complains of toothache\",\n    \"medecinId\": \"{{medecinId}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/consultation/{{consultationId}}/diagnosis",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"consultation",
+								"{{consultationId}}",
+								"diagnosis"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Medecins",
+			"item": [
+				{
+					"name": "Get All Medecins",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.length > 0) {",
+									"    pm.environment.set(\"medecinId\", jsonData[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/medecin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"medecin"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Medecin",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"profession\": \"ORTHODONTAIRE\",\n    \"isSpecialiste\": true,\n    \"phone\": \"0987654321\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/medecin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"medecin"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Seances",
+			"item": [
+				{
+					"name": "Create Seance",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.id) {",
+									"    pm.environment.set(\"seanceId\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"DEBUT_DE_TRAITEMENT\",\n    \"date\": \"{{$isoTimestamp}}\",\n    \"patientId\": \"{{patientId}}\",\n    \"medecinId\": \"{{medecinId}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/seance",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"seance"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Seances",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/seance",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"seance"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		}
+	]
+}
