@@ -8,7 +8,7 @@ import { getEnvironmentConfig } from "./config.js";
 const config = getEnvironmentConfig();
 
 const parseCredentials = (credentials: string) => {
-  if (!credentials) return {};
+  if (!credentials) return undefined;
   try {
     return JSON.parse(credentials);
   } catch (error) {
@@ -25,13 +25,15 @@ const parseCredentials = (credentials: string) => {
       console.log("✅ GCS_SA_KEY auto-repaired successfully.");
       return parsed;
     } catch (finalError) {
-       console.error("❌ CRITICAL: Failed to parse GCS_SA_KEY environment variable.");
+       console.error("❌ Failed to parse GCS_SA_KEY environment variable.");
        console.error("Original Error:", error instanceof Error ? error.message : error);
-       console.error("Repair Error:", finalError instanceof Error ? finalError.message : finalError);
+       
        // Log masked snippet
        const snippet = credentials.length > 50 ? credentials.substring(0, 50) + "..." : credentials;
        console.error(`Input Start: [${snippet}]`);
-       throw error;
+       
+       console.warn("⚠️ Falling back to Application Default Credentials (ADC). verify that the service account is attached to the Cloud Run service.");
+       return undefined;
     }
   }
 };
