@@ -29,4 +29,9 @@ export function registerFeatureRoutes(app: Express) {
   app.use('/reevaluation', reevaluationRoutes);
   app.use('/password-change', passwordChangeRoutes);
   app.use('/verify-email', verifyEmailRoutes);
+
+  // Health Check
+  app.get('/', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Medical Registry API is running' });
+  });
 }
