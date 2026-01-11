@@ -15,11 +15,24 @@ const parseCredentials = (credentials: string) => {
     console.warn("⚠️ GCS_SA_KEY JSON parse failed. Attempting auto-repair...");
     try {
       // Repair strategy:
-      // 1. Replace single quotes with double quotes
-      // 2. Wrap unquoted keys in double quotes
-      let fixed = credentials
-        .replace(/'/g, '"')
-        .replace(/([{,]\s*)([a-zA-Z0-9_]+?)\s*:/g, '$1"$2":');
+      // 1. Remove surrounding whitespace
+      // 2. Remove potential surrounding quotes added by shell/env parsers
+      let fixed = credentials.trim();
+      if ((fixed.startsWith('"') && fixed.endsWith('"')) || (fixed.startsWith("'") && fixed.endsWith("'"))) {
+        fixed = fixed.slice(1, -1);
+      }
+      
+      // 3. Handle actual newlines in string (bad control characters for JSON)
+      // If the environment variable converted \n to actual line breaks, we need to escape them back
+      fixed = fixed.replace(/\n/g, "\\n");
+
+      // 4. Attempt to fix single quotes to double quotes (for keys/values)
+      // Note: This is risky if the private key content has single quotes, but standard GCS keys don't.
+      if (!fixed.includes('"type"')) {
+         fixed = fixed
+           .replace(/'/g, '"')
+           .replace(/([{,]\s*)([a-zA-Z0-9_]+?)\s*:/g, '$1"$2":');
+      }
       
       const parsed = JSON.parse(fixed);
       console.log("✅ GCS_SA_KEY auto-repaired successfully.");
