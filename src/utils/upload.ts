@@ -9,9 +9,27 @@ const config = getEnvironmentConfig();
 
 const parseCredentials = (credentials: string) => {
   if (!credentials) return undefined;
+
+  // 1. Try Base64 decoding first if it doesn't start with curly brace (optimization)
+  // or if simple JSON parse fails.
   try {
-    return JSON.parse(credentials);
+      const trimmed = credentials.trim();
+      // If it doesn"t start with {, it might be base64. 
+      // Even if it does start with {, it could be base64 (implausible for JSON objects but possible).
+      // We'll try standard JSON parse first.
+      return JSON.parse(trimmed);
   } catch (error) {
+    // 2. Try Base64 decode
+    try {
+        const decoded = Buffer.from(credentials, "base64").toString("utf-8");
+        if (decoded.trim().startsWith("{")) {
+            console.log("✅ GCS_SA_KEY detected as Base64 and decoded successfully.");
+            return JSON.parse(decoded);
+        }
+    } catch {
+        // Ignore base64 errors, proceed to repair
+    }
+
     console.warn("⚠️ GCS_SA_KEY JSON parse failed. Attempting auto-repair...");
     try {
       // Repair strategy:
