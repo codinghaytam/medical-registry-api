@@ -35,8 +35,14 @@ RUN set -e && \
     echo "KEYCLOAK_BASE_URL=${KEYCLOAK_URL}" >> .env && \
     echo "KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}" >> .env && \
     echo "GCS_BUCKET_NAME=${GCS_BUCKET_NAME}" >> .env && \
-    echo "GCS_PROJECT_ID=${GCS_PROJECT_ID}" >> .env && \
-    echo "GCS_SA_KEY=\"${GCS_SA_KEY}\"" >> .env
+    echo "GCS_PROJECT_ID=${GCS_PROJECT_ID}" >> .env
+
+# Handle GCS Key: Decode Base64 to JSON file
+# We assume GCS_SA_KEY is passed as a Base64 encoded string of the JSON key.
+RUN echo "${GCS_SA_KEY}" | base64 -d > /app/gcs-key.json
+
+# Set Google Application Credentials environment variable
+ENV GOOGLE_APPLICATION_CREDENTIALS="/app/gcs-key.json"
 
 # Start the application
 CMD npx prisma generate && npx prisma migrate deploy && npx tsc && npm run start
