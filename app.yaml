@@ -1,6 +1,6 @@
 name: medical-registry-api
 services:
-  - name: walrus-app
+  - name: medical-registry-api
     dockerfile_path: Dockerfile
     image:
       registry_type: DOCKER_HUB
@@ -8,7 +8,3 @@ services:
       tag: latest
       registry: "haytamd44"
     http_port: 3000
-    envs:
-      - key: STORAGE_BUCKET
-        # Set this value in DigitalOcean App Platform or via secrets
-        value: ""
