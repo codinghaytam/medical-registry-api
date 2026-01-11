@@ -8,7 +8,10 @@ import { getEnvironmentConfig } from "./config.js";
 const config = getEnvironmentConfig();
 
 const parseCredentials = (credentials: string) => {
-  if (!credentials) return undefined;
+  if (!credentials) {
+      console.error("❌ GCS_SA_KEY is missing or empty.");
+      return undefined;
+  }
 
   // 1. Try Base64 decoding first if it doesn't start with curly brace (optimization)
   // or if simple JSON parse fails.
