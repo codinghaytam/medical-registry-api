@@ -31,10 +31,12 @@ export class ReevaluationController {
 
   updateReevaluation = async (req: Request, res: Response) => {
     const files = Array.isArray(req.files) ? (req.files as Express.Multer.File[]) : [];
-    const removeUploadIds = Array.isArray(req.body.removeUploadIds)
-      ? req.body.removeUploadIds
-      : req.body.removeUploadIds
-        ? [req.body.removeUploadIds]
+    // Support both removeUploads (new) and removeUploadIds (legacy)
+    const rawRemove = req.body.removeUploads || req.body.removeUploadIds;
+    const removeUploads = Array.isArray(rawRemove)
+      ? rawRemove
+      : rawRemove
+        ? [rawRemove]
         : undefined;
 
     const reevaluation = await this.service.update(
@@ -43,7 +45,7 @@ export class ReevaluationController {
         indiceDePlaque: req.body.indiceDePlaque ? parseFloat(req.body.indiceDePlaque) : undefined,
         indiceGingivale: req.body.indiceGingivale ? parseFloat(req.body.indiceGingivale) : undefined,
         seanceId: req.body.seanceId,
-        removeUploadIds
+        removeUploads
       },
       files
     );

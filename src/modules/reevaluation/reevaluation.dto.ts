@@ -19,7 +19,8 @@ export const updateReevaluationSchema = z.object({
     indiceDePlaque: z.coerce.number().nonnegative().optional(),
     indiceGingivale: z.coerce.number().nonnegative().optional(),
     seanceId: uuidSchema.optional(),
-    removeUploadIds: z.array(uuidSchema).optional()
+    removeUploadIds: z.array(z.string()).optional(),
+    removeUploads: z.array(z.string()).optional()
   })
 });
 
