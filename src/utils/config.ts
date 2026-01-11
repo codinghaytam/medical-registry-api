@@ -35,7 +35,7 @@ interface EnvironmentConfig {
   // Google Cloud Storage
   GCS_BUCKET_NAME: string;
   GCS_PROJECT_ID: string;
-  GCS_SA_KEY: string;
+  // GCS_SA_KEY is no longer required in env (used for file generation only)
   
   // Logging
   LOG_LEVEL: 'error' | 'warn' | 'info' | 'debug';
@@ -53,8 +53,7 @@ export function getEnvironmentConfig(): EnvironmentConfig {
     'KEYCLOAK_CLIENT_ID',
     'KEYCLOAK_CLIENT_SECRET',
     'GCS_BUCKET_NAME',
-    'GCS_PROJECT_ID',
-    'GCS_SA_KEY'
+    'GCS_PROJECT_ID'
   ];
 
   const missing = requiredVars.filter(varName => !process.env[varName]);
@@ -99,7 +98,6 @@ export function getEnvironmentConfig(): EnvironmentConfig {
     MAX_FILE_SIZE: process.env.MAX_FILE_SIZE || '10MB',
     GCS_BUCKET_NAME: process.env.GCS_BUCKET_NAME!,
     GCS_PROJECT_ID: process.env.GCS_PROJECT_ID!,
-    GCS_SA_KEY: process.env.GCS_SA_KEY!,
     LOG_LEVEL: logLevel
   };
 }
@@ -117,7 +115,6 @@ export function logConfiguration(config: EnvironmentConfig): void {
   console.log(`  Keycloak Client: ${config.KEYCLOAK_CLIENT_ID}`);
   console.log(`  CORS Origins: ${config.CORS_ORIGINS.join(', ')}`);
   console.log(`  GCS Bucket: ${config.GCS_BUCKET_NAME}`);
-  console.log(`  GCS Key Length: ${config.GCS_SA_KEY ? config.GCS_SA_KEY.length : 'MISSING'}`);
   console.log(`  Max File Size: ${config.MAX_FILE_SIZE}`);
   console.log(`  Log Level: ${config.LOG_LEVEL}`);
   console.log(`  JWT Expires: ${config.JWT_EXPIRES_IN}`);
