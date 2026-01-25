@@ -33,7 +33,7 @@ export class NotificationController {
 
     markAsRead = asyncHandler(async (req: Request, res: Response) => {
         const { id } = req.params;
-        const notification = await this.service.markAsRead(id);
+        const notification = await this.service.markAsRead(id as string);
         res.json(notification);
     });
 
@@ -50,7 +50,7 @@ export class NotificationController {
 
     deleteNotification = asyncHandler(async (req: Request, res: Response) => {
         const { id } = req.params;
-        await this.service.deleteNotification(id);
+        await this.service.deleteNotification(id as string);
         res.status(204).send();
     });
 }

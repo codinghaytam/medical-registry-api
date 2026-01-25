@@ -16,7 +16,7 @@ export function initializeSocketIO(httpServer: HTTPServer, corsOrigins: string[]
     });
 
     // Authentication middleware
-    io.use(async (socket, next) => {
+    io.use(async (socket: Socket, next: (err?: Error) => void) => {
         try {
             const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
 
@@ -27,9 +27,13 @@ export function initializeSocketIO(httpServer: HTTPServer, corsOrigins: string[]
             // Verify token with Keycloak
             const decoded = await verifyKeycloakToken(token);
 
+            if (!decoded) {
+                return next(new Error('Invalid token'));
+            }
+
             // Attach user info to socket
             socket.data.user = {
-                id: decoded.sub,
+                id: decoded.sub || '',
                 email: decoded.email,
                 name: decoded.name
             };
