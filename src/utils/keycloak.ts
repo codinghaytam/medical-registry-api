@@ -259,8 +259,8 @@ export async function safeKeycloakConnect(res?: Response): Promise<KeycloakAdmin
     } catch (error) {
         console.error('Keycloak connection error:', error);
         if (res) {
-            res.status(500).send({ 
-                error: "Keycloak service unavailable", 
+            res.status(500).send({
+                error: "Keycloak service unavailable",
                 message: "Unable to connect to authentication service. Please try again later."
             });
         }
@@ -278,10 +278,10 @@ export async function getUserByEmail(email: string, res?: Response) {
     try {
         const kc = await safeKeycloakConnect(res);
         if (!kc) return null;
-        
+
         // Find users with the specified email
         const users = await kc.users.find({ email: email });
-        
+
         // Return the first user found or null if no users are found
         return users && users.length > 0 ? users[0] : null;
     } catch (error) {
@@ -300,10 +300,10 @@ export async function getUsersByEmailPattern(emailPattern: string, res?: Respons
     try {
         const kc = await safeKeycloakConnect(res);
         if (!kc) return [];
-        
+
         // Find users with the email pattern (Keycloak handles wildcards in the search)
         const users = await kc.users.find({ email: emailPattern });
-        
+
         return users || [];
     } catch (error) {
         console.error('Error finding Keycloak users by email pattern:', error);
@@ -321,15 +321,15 @@ export async function getUserByUsernameOrEmail(usernameOrEmail: string, res?: Re
     try {
         const kc = await safeKeycloakConnect(res);
         if (!kc) return null;
-        
+
         // Try to find by exact username match
         let users = await kc.users.find({ username: usernameOrEmail, exact: true });
-        
+
         // If not found by username, try by email
         if (!users || users.length === 0) {
             users = await kc.users.find({ email: usernameOrEmail });
         }
-        
+
         return users && users.length > 0 ? users[0] : null;
     } catch (error) {
         console.error('Error finding Keycloak user by username or email:', error);
@@ -376,51 +376,51 @@ async function enrichDecodedPayload(decoded: KeycloakTokenPayload) {
 export async function validateKeycloakToken(req: Request, res: Response, next: NextFunction): Promise<any> {
     try {
         const authHeader = req.headers.authorization;
-        
+
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ 
-                error: 'Unauthorized', 
-                message: 'Authorization header with Bearer token is required' 
+            return res.status(401).json({
+                error: 'Unauthorized',
+                message: 'Authorization header with Bearer token is required'
             });
         }
-        
+
         const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-        
+
         if (!token) {
-            return res.status(401).json({ 
-                error: 'Unauthorized', 
-                message: 'Token is required' 
+            return res.status(401).json({
+                error: 'Unauthorized',
+                message: 'Token is required'
             });
         }
-        
+
         // Verify token with Keycloak public key
         const decoded = await verifyKeycloakToken(token);
-        
+
         if (!decoded) {
-            return res.status(401).json({ 
-                error: 'Unauthorized', 
-                message: 'Invalid or expired token' 
+            return res.status(401).json({
+                error: 'Unauthorized',
+                message: 'Invalid or expired token'
             });
         }
-        
+
         if (typeof decoded === 'string') {
             return res.status(401).json({
                 error: 'Unauthorized',
                 message: 'Invalid token payload'
             });
         }
-        
+
         const enrichedPayload = await enrichDecodedPayload(decoded as KeycloakTokenPayload);
-        
+
         // Add user info to request object for use in routes
         (req as any).user = enrichedPayload;
         next();
-        
+
     } catch (error) {
         console.error('Token validation error:', error);
-        return res.status(401).json({ 
-            error: 'Unauthorized', 
-            message: 'Token validation failed' 
+        return res.status(401).json({
+            error: 'Unauthorized',
+            message: 'Token validation failed'
         });
     }
 }
@@ -435,20 +435,20 @@ export async function verifyKeycloakToken(token: string): Promise<JwtPayload | n
         const client = jwksClient({
             jwksUri: `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/certs`
         });
-        
+
         const decoded = jwt.decode(token, { complete: true });
         if (!decoded || typeof decoded === 'string' || !decoded.header.kid) {
             return null;
         }
-        
+
         const key = await client.getSigningKey(decoded.header.kid);
         const signingKey = key.getPublicKey();
-        
+
         const verified = jwt.verify(token, signingKey, {
             algorithms: ['RS256'],
             issuer: `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}`
         });
-        
+
         if (typeof verified === 'string') {
             return null;
         }
@@ -459,3 +459,6 @@ export async function verifyKeycloakToken(token: string): Promise<JwtPayload | n
         return null;
     }
 }
+
+// Export authenticate as an alias for validateKeycloakToken
+export const authenticate = validateKeycloakToken;

@@ -4,6 +4,8 @@ import prisma from '../../lib/prisma.js';
 import { ApiError } from '../../utils/apiError.js';
 import { ReevaluationRepository } from './reevaluation.repository.js';
 import { deleteFile } from '../../utils/upload.js';
+import { NotificationService } from '../notification/notification.service.js';
+import { logger } from '../../utils/logger.js';
 
 interface ReevaluationPayload {
   indiceDePlaque: number;
@@ -22,9 +24,13 @@ interface ReevaluationUpdatePayload {
 }
 
 export class ReevaluationService {
+  private readonly notificationService: NotificationService;
+
   constructor(
     private readonly repository = new ReevaluationRepository()
-  ) {}
+  ) {
+    this.notificationService = new NotificationService();
+  }
 
   async list() {
     return this.repository.findAll();
@@ -51,7 +57,7 @@ export class ReevaluationService {
         }
       });
 
-      return this.repository.create(
+      const reevaluation = await this.repository.create(
         {
           indiceDePlaque: payload.indiceDePlaque,
           indiceGingivale: payload.indiceGingivale,
@@ -60,9 +66,43 @@ export class ReevaluationService {
         },
         tx
       );
+
+      return { seance, reevaluation };
     });
 
-    return result;
+    // Send notification to the user who performed the re-evaluation?
+    // Or to the patient's main doctor? 
+    // Requirement: "if someone reeveluates his passionte" -> Notify the doctor who "owns" the patient?
+
+    // We need to find who is "his patient". 
+    // For now, let's notify the doctor who passed in medecinId (self-notification for confirmation)
+    // AND we should find if there's *another* doctor assigned.
+
+    // Let's get the user ID associated with medecinId
+    try {
+      const medecin = await prisma.medecin.findUnique({
+        where: { id: payload.medecinId },
+        select: { userId: true, user: { select: { name: true } } }
+      });
+
+      const patient = await prisma.patient.findUnique({
+        where: { id: payload.patientId },
+        select: { nom: true, prenom: true }
+      });
+
+      if (medecin && patient) {
+        await this.notificationService.notifyPatientReevaluated(
+          medecin.userId,
+          payload.patientId,
+          `${patient.nom} ${patient.prenom}`,
+          medecin.user.name
+        );
+      }
+    } catch (error) {
+      logger.error('Failed to send reevaluation notification', { error });
+    }
+
+    return result.reevaluation;
   }
 
   async update(id: string, payload: ReevaluationUpdatePayload, files: Express.Multer.File[] = []) {
@@ -73,10 +113,10 @@ export class ReevaluationService {
 
     const currentUploads = existing.uploads || [];
     const uploadsToRemove = payload.removeUploads || [];
-    
+
     // Filter out removed uploads
     const keptUploads = currentUploads.filter(url => !uploadsToRemove.includes(url));
-    
+
     // Add new uploads
     const newUploads = files.map(f => f.path);
     const finalUploads = [...keptUploads, ...newUploads];
@@ -110,7 +150,7 @@ export class ReevaluationService {
     // Delete associated files
     const uploads = existing.uploads || [];
     if (uploads.length) {
-       await Promise.all(uploads.map(url => deleteFile(url)));
+      await Promise.all(uploads.map(url => deleteFile(url)));
     }
   }
 }

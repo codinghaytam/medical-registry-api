@@ -53,6 +53,12 @@ enum TypeMastication {
   BILATERALE
 }
 
+enum NotificationEventType {
+  PATIENT_ASSIGNED
+  PATIENT_TRANSFERRED
+  PATIENT_REEVALUATED
+}
+
 enum SeanceType {
   ACTIVATION
   DEBUT_DE_TRAITEMENT
@@ -67,14 +73,15 @@ enum SeanceType {
 }
 
 model User {
-  id       String    @id @default(uuid())
-  username String
-  email    String    @unique
-  name     String
-  phone    String    @default("")
-  role     Role
-  medecin  Medecin?
-  etudiant Etudiant?
+  id            String         @id @default(uuid())
+  username      String
+  email         String         @unique
+  name          String
+  phone         String         @default("")
+  role          Role
+  medecin       Medecin?
+  etudiant      Etudiant?
+  notifications Notification[]
 }
 
 model Medecin {
@@ -179,4 +186,18 @@ model Task {
   id     String @id @default(uuid())
   title  String
   status Status @default(PENDING)
+}
+
+model Notification {
+  id        String                @id @default(uuid())
+  userId    String
+  eventType NotificationEventType
+  message   String
+  metadata  Json?
+  isRead    Boolean               @default(false)
+  createdAt DateTime              @default(now())
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
 }

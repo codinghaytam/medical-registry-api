@@ -13,6 +13,7 @@ import reevaluationRoutes from './reevaluation/reevaluation.routes.js';
 import seanceRoutes from './seance/seance.routes.js';
 import userRoutes from './users/user.routes.js';
 import verifyEmailRoutes from './verifyEmail/verify-email.routes.js';
+import notificationRoutes from './notification/notification.routes.js';
 
 export function registerFeatureRoutes(app: Express) {
   app.use('/auth', authRoutes);
@@ -29,6 +30,7 @@ export function registerFeatureRoutes(app: Express) {
   app.use('/reevaluation', reevaluationRoutes);
   app.use('/password-change', passwordChangeRoutes);
   app.use('/verify-email', verifyEmailRoutes);
+  app.use('/notifications', notificationRoutes);
 
   // Health Check
   app.get('/', (req, res) => {
