@@ -91,11 +91,31 @@ export class ReevaluationService {
       });
 
       if (medecin && patient) {
-        await this.notificationService.notifyPatientReevaluated(
-          medecin.userId,
-          payload.patientId,
-          `${patient.nom} ${patient.prenom}`,
-          medecin.user.name
+        // Find doctors who have consulted this patient (Initial Consultation doctors)
+        const previousConsultations = await prisma.consultation.findMany({
+          where: { patientId: payload.patientId },
+          select: { medecin: { select: { userId: true } } }
+        });
+
+        // Get unique doctors to notify (excluding the one performing reevaluation)
+        const doctorUserIdsToNotify = new Set(
+          previousConsultations
+            .map(c => c.medecin.userId)
+            .filter(id => id !== medecin.userId)
+        );
+
+        const patientName = `${patient.nom} ${patient.prenom}`;
+        const reevaluatedBy = medecin.user.name;
+
+        await Promise.all(
+          Array.from(doctorUserIdsToNotify).map(targetUserId => 
+            this.notificationService.notifyPatientReevaluated(
+              targetUserId,
+              payload.patientId,
+              patientName,
+              reevaluatedBy
+            )
+          )
         );
       }
     } catch (error) {

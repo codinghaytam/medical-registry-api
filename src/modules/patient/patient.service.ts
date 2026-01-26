@@ -11,6 +11,7 @@ import { logger } from '../../utils/logger.js';
 import { ActionsRepository } from '../actions/actions.repository.js';
 import { ActionsService } from '../actions/actions.service.js';
 import { PatientRepository } from './patient.repository.js';
+import { MedecinRepository } from '../medecin/medecin.repository.js';
 import { NotificationService } from '../notification/notification.service.js';
 
 interface PatientPayload {
@@ -31,6 +32,7 @@ interface PatientPayload {
 export class PatientService {
   private readonly actionService: ActionsService;
   private readonly notificationService: NotificationService;
+  private readonly medecinRepository: MedecinRepository;
 
   constructor(
     private readonly repository = new PatientRepository(),
@@ -38,6 +40,7 @@ export class PatientService {
   ) {
     this.actionService = new ActionsService(this.actionsRepository);
     this.notificationService = new NotificationService();
+    this.medecinRepository = new MedecinRepository();
   }
 
   list() {
@@ -106,33 +109,33 @@ export class PatientService {
         const fromField = targetState === Profession.ORTHODONTAIRE ? 'PARODONTAIRE' : 'ORTHODONTAIRE';
         const toField = targetState === Profession.ORTHODONTAIRE ? 'ORTHODONTAIRE' : 'PARODONTAIRE';
 
-        // Notify the doctor who performed the transfer (confirmation)
-        // AND the target doctors? Usually transfers are TO a department, not a specific person initially?
-        // But here medecinId is passed. If medecinId is the one PERFORMING the action:
+        // Notify all doctors in the target field
+        const targetMedecins = await tx.medecin.findMany({
+          where: { profession: targetState },
+          select: { userId: true }
+        });
 
-        // Let's assume medecinId is the current user performing the action.
-        // If we want to notify "another" doctor, we need their ID.
-        // Based on requirements: "sends notifications to a medecin for if ether a passion is added to his fields"
+        const patientName = `${patient.nom} ${patient.prenom}`;
+        const transferredBy = medecin.user.name ?? 'Inconnu';
 
-        // If I am transferring TO Ortho, I should notify Ortho doctors?
-        // Or if the transfer is ASSIGNED to a specific doctor?
+        await Promise.all(
+          targetMedecins.map((target) =>
+            this.notificationService.notifyPatientTransferred(
+              target.userId,
+              patientId,
+              patientName,
+              fromField,
+              toField,
+              transferredBy
+            )
+          )
+        );
 
-        // The prompt says: "sends notifications to a medecin for if ether a passion is added to his fields (ortho or paro), form the other (by transfer)"
-
-        // Since we don't have a specific target doctor in the transfer (it just changes state), 
-        // we might broadcast to all doctors of that profession?
-        // OR, if the requirement implies notifying the CURRENT doctor about the successful transfer?
-
-        // "sends notifications to a medecin... if a patient is added to his fields... from the other (by transfer)"
-        // This implies alerting doctors of the TARGET field.
-
-        // For simplicity and since we don't have a "target medecin" in the payload (only the one performing the action),
-        // we will log it. In a real scenario, we'd query all doctors of the target profession and notify them.
-        // BUT, if `medecinId` is the target?
-        // Looking at the code: `medecin: { connect: { id: medecinId } }`. This connects the ACTION to the medecin.
-        // Usually the logged in user creates the action.
-
-        logger.info('Patient transfer requested', { patientId, targetState, actionType });
+        logger.info('Patient transfer notification sent', {
+          patientId,
+          targetState,
+          recipientCount: targetMedecins.length
+        });
       }
 
       return updatedPatient;

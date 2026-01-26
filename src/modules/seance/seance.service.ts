@@ -3,6 +3,8 @@ import { ApiError } from '../../utils/apiError.js';
 import { safeKeycloakConnect, type KeycloakAdminClient, type KcAdminClient } from '../../utils/keycloak.js';
 import { MedecinRepository } from '../medecin/medecin.repository.js';
 import { SeanceRepository } from './seance.repository.js';
+import { NotificationService } from '../notification/notification.service.js';
+import prisma from '../../lib/prisma.js';
 
 interface SeancePayload {
   type: SeanceType;
@@ -38,10 +40,14 @@ const ORTHO_ONLY_TYPES: SeanceType[] = [
 ];
 
 export class SeanceService {
+  private readonly notificationService: NotificationService;
+
   constructor(
     private readonly repository = new SeanceRepository(),
     private readonly medecinRepository = new MedecinRepository()
-  ) {}
+  ) {
+    this.notificationService = new NotificationService();
+  }
 
   private async validateTypeWithMedecin(type: SeanceType, medecinId: string) {
     const medecin = await this.medecinRepository.findById(medecinId);
@@ -104,6 +110,29 @@ export class SeanceService {
       patient: { connect: { id: payload.patientId } },
       medecin: { connect: { id: payload.medecinId } }
     });
+
+    try {
+      const medecin = await prisma.medecin.findUnique({
+        where: { id: payload.medecinId },
+        select: { userId: true }
+      });
+      const patient = await prisma.patient.findUnique({
+        where: { id: payload.patientId },
+        select: { nom: true, prenom: true }
+      });
+
+      if (medecin && patient) {
+        await this.notificationService.notifySeanceCreated(
+          medecin.userId,
+          payload.patientId,
+          `${patient.nom} ${patient.prenom}`,
+          payload.type,
+          payload.date
+        );
+      }
+    } catch (e) {
+      console.error('Failed to send notification for seance creation', e);
+    }
 
     const kc = await safeKeycloakConnect();
     return this.attachKeycloakInfo(seance, kc);

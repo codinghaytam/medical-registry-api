@@ -111,6 +111,44 @@ export class NotificationService {
         });
     }
 
+    async notifySeanceCreated(
+        medecinId: string,
+        patientId: string,
+        patientName: string,
+        seanceType: string,
+        date: Date
+    ) {
+        return this.createNotification({
+            userId: medecinId,
+            eventType: NotificationEventType.SEANCE_CREATED,
+            message: `New seance (${seanceType}) created for patient ${patientName}`,
+            metadata: {
+                patientId,
+                patientName,
+                seanceType,
+                date
+            }
+        });
+    }
+
+    async notifyConsultationCreated(
+        medecinId: string,
+        patientId: string,
+        patientName: string,
+        date: Date
+    ) {
+        return this.createNotification({
+            userId: medecinId,
+            eventType: NotificationEventType.CONSULTATION_CREATED,
+            message: `New consultation created for patient ${patientName}`,
+            metadata: {
+                patientId,
+                patientName,
+                date
+            }
+        });
+    }
+
     private emitNotification(notification: any) {
         const io = getSocketIO();
         if (io) {

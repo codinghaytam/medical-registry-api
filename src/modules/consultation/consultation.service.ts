@@ -4,6 +4,7 @@ import { ApiError } from '../../utils/apiError.js';
 import { DiagnostiqueRepository } from '../diagnostique/diagnostique.repository.js';
 import { MedecinRepository } from '../medecin/medecin.repository.js';
 import { ConsultationRepository } from './consultation.repository.js';
+import { NotificationService } from '../notification/notification.service.js';
 
 interface ConsultationPayload {
   date: Date;
@@ -18,11 +19,15 @@ interface DiagnosisPayload {
 }
 
 export class ConsultationService {
+  private readonly notificationService: NotificationService;
+
   constructor(
     private readonly repository = new ConsultationRepository(),
     private readonly medecinRepository = new MedecinRepository(),
     private readonly diagnostiqueRepository = new DiagnostiqueRepository()
-  ) {}
+  ) {
+    this.notificationService = new NotificationService();
+  }
 
   list() {
     return this.repository.findAll();
@@ -42,7 +47,7 @@ export class ConsultationService {
       throw ApiError.notFound(`No Medecin record found with ID: ${payload.medecinId}`);
     }
 
-    return this.repository.create({
+    const consultation = await this.repository.create({
       date: payload.date,
       idConsultation: randomUUID(),
       patient: {
@@ -50,6 +55,28 @@ export class ConsultationService {
       },
       medecin: { connect: { id: payload.medecinId } }
     });
+
+    try {
+      const medecin = await prisma.medecin.findUnique({
+        where: { id: payload.medecinId },
+        select: { userId: true }
+      });
+      // The patient is created inline, so we use the payload data for the name
+      const patientName = `${payload.patient.nom} ${payload.patient.prenom}`;
+
+      if (medecin) {
+        await this.notificationService.notifyConsultationCreated(
+          medecin.userId,
+          consultation.patientId, // Get generated patient ID from created consultation
+          patientName,
+          payload.date
+        );
+      }
+    } catch (e) {
+      console.error('Failed to send notification for consultation creation', e);
+    }
+
+    return consultation;
   }
 
   async addDiagnosis(consultationId: string, payload: DiagnosisPayload) {
