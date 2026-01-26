@@ -144,38 +144,58 @@ export class AuthService {
       throw ApiError.unauthorized('Invalid token payload from identity provider');
     }
 
-    const roleSet = new Set<string>();
-    decoded.realm_access?.roles?.forEach((role) => roleSet.add(role));
-    if (decoded.resource_access) {
-      Object.values(decoded.resource_access).forEach((resource) => {
-        resource?.roles?.forEach((role) => roleSet.add(role));
-      });
+    // Role resolution logic: We bypass Keycloak token roles and use our DB as the source of truth
+    const email = decoded.email ?? fallbackIdentifier;
+
+    if (!email) {
+      throw ApiError.unauthorized('No identifying information found in token');
     }
 
-    const email = decoded.email ?? fallbackIdentifier ?? null;
-    const username = decoded.preferred_username ?? fallbackIdentifier ?? null;
+    // Fetch user with relations from our database
+    const dbUser = await this.userRepository.findByEmail(email);
+    if (!dbUser) {
+      throw ApiError.unauthorized('User record not found in application database');
+    }
 
-    let fallbackRole: string | null = null;
-    let dbUserId: string | null = null;
+    const roleSet = new Set<string>();
+    roleSet.add(dbUser.role); // Primary role from DB
 
-    if (email) {
-      const dbUser = await this.userRepository.findByEmail(email);
-      if (dbUser) {
-        dbUserId = dbUser.id;
-        fallbackRole = dbUser.role;
-        if (roleSet.size === 0) {
-          roleSet.add(dbUser.role);
+    // Fetch full rich data for the profile
+    const richUser = await this.userRepository.findByIdIncludingProfile(dbUser.id);
+    let extraData: any = {};
+
+    if (dbUser.role === Role.MEDECIN && richUser?.medecin) {
+      extraData = {
+        ...richUser.medecin,
+        user: {
+          id: dbUser.id,
+          name: dbUser.name,
+          email: dbUser.email,
+          username: dbUser.username,
+          role: dbUser.role
         }
-      }
+      };
+    } else if (dbUser.role === Role.ETUDIANT && richUser?.etudiant) {
+      extraData = {
+        ...richUser.etudiant,
+        user: {
+          id: dbUser.id,
+          name: dbUser.name,
+          email: dbUser.email,
+          username: dbUser.username,
+          role: dbUser.role
+        }
+      };
     }
 
     return {
-      id: decoded.sub ?? dbUserId,
-      email,
-      username,
+      id: dbUser.id, // Prefer our internal ID
+      email: dbUser.email,
+      username: dbUser.username,
       roles: Array.from(roleSet),
-      fallbackRole,
-      keycloakId: decoded.sub ?? null
+      fallbackRole: dbUser.role,
+      keycloakId: decoded.sub ?? null,
+      ...extraData
     };
   }
 }

@@ -2,7 +2,7 @@ import { Prisma, Role } from '@prisma/client';
 import prisma, { PrismaTransaction } from '../../lib/prisma.js';
 
 export class UserRepository {
-  constructor(private readonly db = prisma) {}
+  constructor(private readonly db = prisma) { }
 
   findAll(tx: PrismaTransaction = this.db) {
     return tx.user.findMany();
@@ -18,6 +18,16 @@ export class UserRepository {
 
   findByEmail(email: string, tx: PrismaTransaction = this.db) {
     return tx.user.findUnique({ where: { email } });
+  }
+
+  findByIdIncludingProfile(id: string, tx: PrismaTransaction = this.db) {
+    return tx.user.findUnique({
+      where: { id },
+      include: {
+        medecin: true,
+        etudiant: true
+      }
+    });
   }
 
   create(data: Prisma.UserCreateInput, tx: PrismaTransaction = this.db) {
