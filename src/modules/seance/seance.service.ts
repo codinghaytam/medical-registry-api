@@ -20,13 +20,20 @@ interface SeanceUpdatePayload {
   medecinId?: string;
 }
 
-const PARO_ONLY_TYPES: SeanceType[] = ['REEVALUATION'];
+const PARO_ONLY_TYPES: SeanceType[] = [
+  'REEVALUATION',
+  'PHASE_CURATIVE',
+  'MAINTENANCE',
+  'THERAPEUTIQUE_INITIALE',
+  'DETARTRAGE',
+  'SURFACAGE'
+];
 const ORTHO_ONLY_TYPES: SeanceType[] = [
   'ACTIVATION',
   'DEBUT_DE_TRAITEMENT',
-  'FIN_DE_TRAITEMENT',,
+  'FIN_DE_TRAITEMENT',
   'SUSPENSION_TRAITEMENT',
-  'AUTRE'
+  'AUTRE',
   'SUIVI_POST_TRAITEMENT'
 ];
 
@@ -92,6 +99,7 @@ export class SeanceService {
 
     const seance = await this.repository.create({
       type: payload.type,
+      autreMotif: payload.autreMotif,
       date: payload.date,
       patient: { connect: { id: payload.patientId } },
       medecin: { connect: { id: payload.medecinId } }
@@ -113,6 +121,7 @@ export class SeanceService {
 
     const updated = await this.repository.update(id, {
       type: payload.type,
+      autreMotif: payload.autreMotif,
       date: payload.date,
       patient: payload.patientId ? { connect: { id: payload.patientId } } : undefined,
       medecin: payload.medecinId ? { connect: { id: payload.medecinId } } : undefined
