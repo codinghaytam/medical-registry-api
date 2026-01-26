@@ -70,6 +70,8 @@ enum SeanceType {
   THERAPEUTIQUE_INITIALE
   DETARTRAGE
   SURFACAGE
+  SUSPENSION_TRAITEMENT
+  AUTRE
 }
 
 model User {
@@ -148,6 +150,7 @@ model Diagnostique {
 model Seance {
   id        String     @id @default(uuid())
   type      SeanceType
+  autreMotif String?
   date      DateTime
   patient   Patient    @relation(fields: [patientId], references: [id])
   medecin   Medecin    @relation(fields: [medecinId], references: [id])

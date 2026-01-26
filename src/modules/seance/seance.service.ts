@@ -6,6 +6,7 @@ import { SeanceRepository } from './seance.repository.js';
 
 interface SeancePayload {
   type: SeanceType;
+  autreMotif?: string;
   date: Date;
   patientId: string;
   medecinId: string;
@@ -13,6 +14,7 @@ interface SeancePayload {
 
 interface SeanceUpdatePayload {
   type?: SeanceType;
+  autreMotif?: string;
   date?: Date;
   patientId?: string;
   medecinId?: string;
@@ -22,7 +24,9 @@ const PARO_ONLY_TYPES: SeanceType[] = ['REEVALUATION'];
 const ORTHO_ONLY_TYPES: SeanceType[] = [
   'ACTIVATION',
   'DEBUT_DE_TRAITEMENT',
-  'FIN_DE_TRAITEMENT',
+  'FIN_DE_TRAITEMENT',,
+  'SUSPENSION_TRAITEMENT',
+  'AUTRE'
   'SUIVI_POST_TRAITEMENT'
 ];
 
