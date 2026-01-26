@@ -98,7 +98,8 @@ export class AuthService {
   private async exchangeToken(values: Record<string, string>) {
     const params = this.buildFormData({
       client_id: this.clientId,
-      ...(this.clientSecret ? { client_secret: this.clientSecret } : {}),
+      ...(values.grant_type === 'password' ? { scope: 'openid email profile' } : {}),
+      ...(this.clientSecret && this.clientSecret.trim() !== '' ? { client_secret: this.clientSecret } : {}),
       ...values
     });
 
