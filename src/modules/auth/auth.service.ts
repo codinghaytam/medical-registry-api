@@ -98,20 +98,42 @@ export class AuthService {
   private async exchangeToken(values: Record<string, string>) {
     const params = this.buildFormData({
       client_id: this.clientId,
-      scope: 'openid email profile',
       ...(this.clientSecret ? { client_secret: this.clientSecret } : {}),
       ...values
     });
 
     try {
       const { data } = await axios.post<KeycloakTokenResponse>(this.tokenEndpoint, params, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
+        }
       });
       return data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        throw ApiError.unauthorized('Invalid credentials');
+      if (axios.isAxiosError(error) && error.response) {
+        const status = error.response.status;
+        const data = error.response.data;
+
+        // Propagate standard OAuth2 error messages
+        const message = data?.error_description || data?.error || 'Authentication failed';
+
+        if (status === 401) {
+          throw ApiError.unauthorized('Invalid credentials');
+        }
+
+        if (status === 400) {
+          // invalid_grant usually means token is expired, revoked, or used already
+          throw ApiError.badRequest(message);
+        }
+
+        console.error('Keycloak token exchange error:', {
+          status,
+          error: data?.error,
+          description: data?.error_description
+        });
       }
+
       throw ApiError.internal('Authentication service unavailable');
     }
   }
