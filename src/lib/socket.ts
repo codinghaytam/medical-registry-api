@@ -2,8 +2,10 @@ import { Server as HTTPServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { logger } from '../utils/logger.js';
 import { verifyKeycloakToken } from '../utils/keycloak.js';
+import { UserRepository } from '../modules/users/user.repository.js';
 
 let io: Server | null = null;
+const userRepository = new UserRepository();
 
 export function initializeSocketIO(httpServer: HTTPServer, corsOrigins: string[]): Server {
     io = new Server(httpServer, {
@@ -31,9 +33,20 @@ export function initializeSocketIO(httpServer: HTTPServer, corsOrigins: string[]
                 return next(new Error('Invalid token'));
             }
 
+            let dbUserId = decoded.sub || '';
+            // Try to look up the DB user ID using email
+            if (decoded.email) {
+                const dbUser = await userRepository.findByEmail(decoded.email);
+                if (dbUser) {
+                    dbUserId = dbUser.id;
+                } else {
+                    logger.warn(`Socket connected with Keycloak user ${decoded.email} but no local DB user found.`);
+                }
+            }
+
             // Attach user info to socket
             socket.data.user = {
-                id: decoded.sub || '',
+                id: dbUserId,
                 email: decoded.email,
                 name: decoded.name
             };
