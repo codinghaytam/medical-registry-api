@@ -8,6 +8,7 @@ module.exports = {
   collectCoverage: true,
   collectCoverageFrom: ['src/utils/**/*.ts'],
   coverageDirectory: 'coverage',
+  coverageReporters: ['json', 'lcov', 'text', 'clover'],
   testTimeout: 20000,
   transformIgnorePatterns: ['/node_modules/']
 };
