@@ -12,10 +12,10 @@ import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
 
 const sdk = new NodeSDK({
   // Define a resource to identify your service
-  resource: new Resource({
+  resource: Resource.default().merge(new Resource({
     [SemanticResourceAttributes.SERVICE_NAME]: process.env.SERVICE_NAME || 'medical-registry-api',
     [SemanticResourceAttributes.SERVICE_VERSION]: process.env.SERVICE_VERSION || '1.0.0',
-  }),
+  })),
   // Use OTLPTraceExporter for traces
   traceExporter: new OTLPTraceExporter(),
   // Use OTLPMetricExporter for metrics
