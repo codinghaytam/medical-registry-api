@@ -1,10 +1,12 @@
 import express from 'express';
+import { createServer } from 'http';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import { fileURLToPath } from 'url';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
+import { initializeSocketIO } from './lib/socket.js';
 // Load environment variables first
 dotenv.config();
 // Validate environment configuration
@@ -16,6 +18,9 @@ const __dirname = path.dirname(__filename);
 // Validate and get configuration
 const config = getEnvironmentConfig();
 const app = express();
+const httpServer = createServer(app);
+// Initialize Socket.IO
+initializeSocketIO(httpServer, config.CORS_ORIGINS);
 // Log configuration (with secrets masked)
 if (config.NODE_ENV === 'development') {
     logConfiguration(config);
@@ -40,9 +45,10 @@ registerFeatureRoutes(app);
 app.use(notFoundHandler);
 app.use(errorHandler);
 const PORT = config.PORT;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📁 Images directory serving at /uploads`);
     console.log(`🌍 Environment: ${config.NODE_ENV}`);
+    console.log(`🔌 WebSocket server initialized`);
 });
 export default app;
