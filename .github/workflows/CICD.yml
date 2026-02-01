@@ -76,6 +76,7 @@ jobs:
             OTEL_TRACES_EXPORTER=${{ secrets.OTEL_TRACES_EXPORTER }}
             OTEL_METRICS_EXPORTER=${{ secrets.OTEL_METRICS_EXPORTER }}
             OTEL_LOGS_EXPORTER=${{ secrets.OTEL_LOGS_EXPORTER }}
+            OTEL_EXPORTER_OTLP_HEADERS=${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
 
 
 

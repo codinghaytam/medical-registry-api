@@ -3,25 +3,28 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
-import { Resource } from '@opentelemetry/resources';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
+import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 
-// Note: The `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` 
-// environment variables are automatically picked up by the OTLP exporters.
-// You do not need to manually pass them into the exporter configuration.
+// Optional: Enable diagnostics if OTEL_LOG_LEVEL is set to see connection issues
+if (process.env.OTEL_LOG_LEVEL) {
+  diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
+}
 
 const sdk = new NodeSDK({
-  // Define a resource to identify your service
-  resource: new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: process.env.SERVICE_NAME || 'medical-registry-api',
-    [SemanticResourceAttributes.SERVICE_VERSION]: process.env.SERVICE_VERSION || '1.0.0',
+  resource: resourceFromAttributes({
+    [ATTR_SERVICE_NAME]: process.env.SERVICE_NAME || 'medical-registry-api',
+    [ATTR_SERVICE_VERSION]: process.env.SERVICE_VERSION || '1.0.0',
   }),
-  // Use OTLPTraceExporter for traces
+  // OTLPTraceExporter and OTLPMetricExporter automatically pick up:
+  // OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_EXPORTER_OTLP_HEADERS
   traceExporter: new OTLPTraceExporter(),
-  // Use OTLPMetricExporter for metrics
-  metricReader: new PeriodicExportingMetricReader({
-    exporter: new OTLPMetricExporter(),
-  }),
+  metricReaders: [
+    new PeriodicExportingMetricReader({
+      exporter: new OTLPMetricExporter(),
+    }),
+  ],
   instrumentations: [getNodeAutoInstrumentations()],
 });
 
@@ -34,3 +37,5 @@ process.on('SIGTERM', () => {
 });
 
 sdk.start();
+
+

@@ -22,6 +22,7 @@ ARG OTEL_LOG_LEVEL
 ARG OTEL_TRACES_EXPORTER
 ARG OTEL_METRICS_EXPORTER
 ARG OTEL_LOGS_EXPORTER
+ARG OTEL_EXPORTER_OTLP_HEADERS
 
 
 # Copy package files and install dependencies
@@ -54,11 +55,12 @@ ENV OTEL_LOG_LEVEL=${OTEL_LOG_LEVEL}
 ENV OTEL_TRACES_EXPORTER=${OTEL_TRACES_EXPORTER}
 ENV OTEL_METRICS_EXPORTER=${OTEL_METRICS_EXPORTER}
 ENV OTEL_LOGS_EXPORTER=${OTEL_LOGS_EXPORTER}
+ENV OTEL_EXPORTER_OTLP_HEADERS=${OTEL_EXPORTER_OTLP_HEADERS}
 
 # Build the application
 RUN npx prisma generate
 RUN npx tsc
 
-# Start the application
-CMD ["sh", "-c", "npx prisma migrate deploy && node ./dist/app.js"]
+# Start the application with OpenTelemetry instrumentation
+CMD ["sh", "-c", "npx prisma migrate deploy && node --import ./dist/utils/instrumentation.js ./dist/app.js"]
 EXPOSE 3000
