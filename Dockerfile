@@ -1,4 +1,7 @@
 FROM node:latest
+
+RUN npm install -g pnpm
+
 WORKDIR /app
 
 # Define build arguments for environment variables
@@ -23,35 +26,11 @@ ARG OTEL_LOGS_EXPORTER
 
 # Copy package files and install dependencies
 COPY ./package.json /app 
-COPY ./app.yaml /app
-RUN npm install
+COPY ./pnpm-lock.yaml /app
+RUN pnpm install
 
 # Copy all files
 COPY . /app
-
-# Create .env file from build arguments
-RUN set -e && \
-    echo "${DATABASE_URL}" && \
-    echo "# Environment variables declared in this file are automatically made available to Prisma." > .env && \
-    echo "# See the documentation for more detail: https://pris.ly/d/prisma-schema#accessing-environment-variables-from-the-schema" >> .env && \
-    echo "" >> .env && \
-    echo "DATABASE_URL=${DATABASE_URL}" >> .env && \
-    echo "PORT=${PORT:-3000}" >> .env && \
-    echo "" >> .env && \
-    echo "KEYCLOAK_REALM=${KEYCLOAK_REALM}" >> .env && \
-    echo "KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT}" >> .env && \
-    echo "KEYCLOAK_BASE_URL=${KEYCLOAK_URL}" >> .env && \
-    echo "KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}" >> .env && \
-    echo "GCS_BUCKET_NAME=${GCS_BUCKET_NAME}" >> .env && \
-    echo "GCS_PROJECT_ID=${GCS_PROJECT_ID}" >> .env && \
-    echo "SERVICE_NAME=${SERVICE_NAME}" >> .env && \
-    echo "OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}" >> .env && \
-    echo "OTEL_EXPORTER_OTLP_PROTOCOL=${OTEL_EXPORTER_OTLP_PROTOCOL}" >> .env && \
-    echo "OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES}" >> .env && \
-    echo "OTEL_LOG_LEVEL=${OTEL_LOG_LEVEL}" >> .env && \
-    echo "OTEL_TRACES_EXPORTER=${OTEL_TRACES_EXPORTER}" >> .env && \
-    echo "OTEL_METRICS_EXPORTER=${OTEL_METRICS_EXPORTER}" >> .env && \
-    echo "OTEL_LOGS_EXPORTER=${OTEL_LOGS_EXPORTER}" >> .env
 
 # Handle GCS Key: Decode Base64 to JSON file
 # We assume GCS_SA_KEY is passed as a Base64 encoded string of the JSON key.
@@ -59,7 +38,27 @@ RUN echo "${GCS_SA_KEY}" | base64 -d > /app/gcs-key.json
 
 # Set Google Application Credentials environment variable
 ENV GOOGLE_APPLICATION_CREDENTIALS="/app/gcs-key.json"
+ENV DATABASE_URL=${DATABASE_URL}
+ENV PORT=${PORT:-3000}
+ENV KEYCLOAK_REALM=${KEYCLOAK_REALM}
+ENV KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT}
+ENV KEYCLOAK_BASE_URL=${KEYCLOAK_URL}
+ENV KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+ENV GCS_BUCKET_NAME=${GCS_BUCKET_NAME}
+ENV GCS_PROJECT_ID=${GCS_PROJECT_ID}
+ENV SERVICE_NAME=${SERVICE_NAME}
+ENV OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
+ENV OTEL_EXPORTER_OTLP_PROTOCOL=${OTEL_EXPORTER_OTLP_PROTOCOL}
+ENV OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES}
+ENV OTEL_LOG_LEVEL=${OTEL_LOG_LEVEL}
+ENV OTEL_TRACES_EXPORTER=${OTEL_TRACES_EXPORTER}
+ENV OTEL_METRICS_EXPORTER=${OTEL_METRICS_EXPORTER}
+ENV OTEL_LOGS_EXPORTER=${OTEL_LOGS_EXPORTER}
+
+# Build the application
+RUN npx prisma generate
+RUN npx tsc
 
 # Start the application
-CMD npx prisma generate && npx prisma migrate deploy && npx tsc && npm run start
+CMD ["sh", "-c", "npx prisma migrate deploy && node ./dist/app.js"]
 EXPOSE 3000
