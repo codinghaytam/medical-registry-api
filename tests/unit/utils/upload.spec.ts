@@ -1,5 +1,30 @@
-import fs from 'fs';
-import path from 'path';
+
+// Mock config BEFORE import
+jest.mock('../../../src/utils/config', () => ({ // Note: no .js extension needed here usually if ts-jest handles it, but let's be safe. standard mock path resolution works.
+  getEnvironmentConfig: jest.fn(() => ({
+    GCS_BUCKET_NAME: 'test-bucket',
+    GCS_PROJECT_ID: 'test-project',
+    MAX_FILE_SIZE: '5MB'
+  }))
+}));
+
+// Mock Google Cloud Storage
+const mockFileDelete = jest.fn().mockResolvedValue([{}]);
+const mockBucketFile = jest.fn(() => ({
+  delete: mockFileDelete,
+  createWriteStream: jest.fn()
+}));
+const mockBucket = jest.fn(() => ({
+  file: mockBucketFile
+}));
+const mockStorage = jest.fn(() => ({
+  bucket: mockBucket
+}));
+
+jest.mock('@google-cloud/storage', () => ({
+  Storage: mockStorage
+}));
+
 import {
   getFileExtension,
   isValidImageFile,
@@ -7,14 +32,10 @@ import {
   deleteImageIfExists
 } from '../../../src/utils/upload';
 
-// Match deleteFile base path: src/utils + '../upload' => src/upload
-const deleteBaseDir = path.join(__dirname, '../../../src/upload');
-
 describe('utils/upload', () => {
-  beforeAll(() => {
-    if (!fs.existsSync(deleteBaseDir)) {
-      fs.mkdirSync(deleteBaseDir, { recursive: true });
-    }
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   test('getFileExtension returns lowercased extension', () => {
@@ -34,17 +55,32 @@ describe('utils/upload', () => {
     expect(isValidImageFile('c')).toBe(false);
   });
 
-  test('deleteFile removes existing file from src/upload', async () => {
+  test('deleteFile calls GCS bucket delete', async () => {
     const fname = 'testfile.jpg';
-    const fpath = path.join(deleteBaseDir, fname);
-    fs.writeFileSync(fpath, 'data');
-    expect(fs.existsSync(fpath)).toBe(true);
     const result = await deleteFile(fname);
+
     expect(result).toBe(true);
-    expect(fs.existsSync(fpath)).toBe(false);
+    // Verify GCS was called
+    // We can't easily access the mock instances created inside the module unless we export the mocks from the setup or spy on them.
+    // However, since we defined the mocks in the scope of this test file and passed them to jest.mock factory,
+    // we *can* verify them if we reused the variables. 
+    // Wait, jest.mock factory functions utilize the scope differently. variables must be prefixed with 'mock'.
+
+    // Actually, to reference variables inside jest.mock, they must be prefixed with 'mock'. 
+    // I did name them mockStorage, mockBucket, etc.
+    expect(mockBucketFile).toHaveBeenCalledWith(fname);
+    expect(mockFileDelete).toHaveBeenCalled();
   });
 
-  test('deleteImageIfExists no throw when file missing', async () => {
-    await expect(deleteImageIfExists('nonexistent.jpg')).resolves.toBeUndefined();
+  test('deleteImageIfExists calls deleteFile', async () => {
+    const fname = 'test.jpg';
+    await deleteImageIfExists(fname);
+    expect(mockBucketFile).toHaveBeenCalledWith(fname);
+    expect(mockFileDelete).toHaveBeenCalled();
+  });
+
+  test('deleteImageIfExists does nothing if null', async () => {
+    await deleteImageIfExists(null);
+    expect(mockBucketFile).not.toHaveBeenCalled();
   });
 });

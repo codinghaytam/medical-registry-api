@@ -5,6 +5,9 @@ module.exports = {
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: './tsconfig.test.json', diagnostics: { ignoreCodes: [151002] } }]
   },
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
   collectCoverage: true,
   collectCoverageFrom: ['src/utils/**/*.ts'],
   coverageDirectory: 'coverage',

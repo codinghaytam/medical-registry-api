@@ -15,6 +15,8 @@ describe('utils/config', () => {
     process.env.CORS_ORIGINS = 'http://localhost:3000, https://app.example.com';
     process.env.LOG_LEVEL = 'info';
     process.env.PORT = '4000';
+    process.env.GCS_BUCKET_NAME = 'test-bucket';
+    process.env.GCS_PROJECT_ID = 'test-project';
   });
 
   afterEach(() => {
@@ -38,7 +40,7 @@ describe('utils/config', () => {
 
   test('logConfiguration masks database credentials and logs key fields', () => {
     const cfg = getEnvironmentConfig();
-    const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const spy = jest.spyOn(console, 'log').mockImplementation(() => { });
 
     logConfiguration(cfg);
 
