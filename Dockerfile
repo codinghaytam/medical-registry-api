@@ -26,16 +26,15 @@ ARG OTEL_EXPORTER_OTLP_HEADERS
 
 
 # Copy package files and install dependencies
-COPY ./package.json /app 
-COPY ./pnpm-lock.yaml /app
-RUN pnpm install
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 # Copy all files
-COPY . /app
+COPY . .
 
 # Handle GCS Key: Decode Base64 to JSON file
 # We assume GCS_SA_KEY is passed as a Base64 encoded string of the JSON key.
-RUN echo "${GCS_SA_KEY}" | base64 -d > /app/gcs-key.json
+RUN if [ -n "$GCS_SA_KEY" ]; then echo "${GCS_SA_KEY}" | base64 -d > /app/gcs-key.json; fi
 
 # Set Google Application Credentials environment variable
 ENV GOOGLE_APPLICATION_CREDENTIALS="/app/gcs-key.json"
@@ -58,8 +57,8 @@ ENV OTEL_LOGS_EXPORTER=${OTEL_LOGS_EXPORTER}
 ENV OTEL_EXPORTER_OTLP_HEADERS=${OTEL_EXPORTER_OTLP_HEADERS}
 
 # Build the application
-RUN npx prisma generate
-RUN npx tsc
+RUN pnpm exec prisma generate
+RUN pnpm exec tsc
 
 # Start the application with OpenTelemetry instrumentation
 CMD ["sh", "-c", "npx prisma migrate deploy && node --import ./dist/utils/instrumentation.js ./dist/app.js"]
