@@ -3,6 +3,8 @@ import { validateKeycloakToken } from '../../utils/keycloak.js';
 import { validatePhone } from '../../utils/validation.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { validateRequest } from '../../middlewares/validation.middleware.js';
+import { validateRole } from '../../middlewares/role.middleware.js';
+import { Role } from '@prisma/client';
 import {
   createUserSchema,
   updateUserSchema,
@@ -15,47 +17,57 @@ import { UserController } from './user.controller.js';
 const router = Router();
 const controller = new UserController();
 
-router.get('/', validateKeycloakToken, asyncHandler(controller.getUsers));
+// All routes require authentication
+router.use(validateKeycloakToken);
+
+// Read Routes
+router.get(
+  '/',
+  validateRole([Role.ADMIN, Role.MEDECIN]), // Admin can manage, Doctor might need directory
+  asyncHandler(controller.getUsers)
+);
 router.get(
   '/role/:role',
-  validateKeycloakToken,
+  validateRole([Role.ADMIN, Role.MEDECIN]),
   validateRequest(userRoleParamSchema),
   asyncHandler(controller.getUsersByRole)
 );
 router.get(
   '/medecins',
-  validateKeycloakToken,
+  validateRole([Role.ADMIN, Role.MEDECIN, Role.ETUDIANT]), // Everyone needs to see doctors
   asyncHandler(controller.getMedecins)
 );
 router.get(
   '/email/:email',
-  validateKeycloakToken,
+  validateRole([Role.ADMIN, Role.MEDECIN]),
   validateRequest(userEmailParamSchema),
   asyncHandler(controller.getUserByEmail)
 );
 router.get(
   '/:id',
-  validateKeycloakToken,
+  validateRole([Role.ADMIN, Role.MEDECIN]),
   validateRequest(userIdParamSchema),
   asyncHandler(controller.getUserById)
 );
+
+// Write Routes - strictly ADMIN
 router.post(
   '/',
-  validateKeycloakToken,
+  validateRole([Role.ADMIN]),
   validatePhone,
   validateRequest(createUserSchema),
   asyncHandler(controller.createUser)
 );
 router.put(
   '/:id',
-  validateKeycloakToken,
+  validateRole([Role.ADMIN]), // Self-update should ideally be separate, restricting to Admin for now
   validatePhone,
   validateRequest(updateUserSchema),
   asyncHandler(controller.updateUser)
 );
 router.delete(
   '/:id',
-  validateKeycloakToken,
+  validateRole([Role.ADMIN]),
   validateRequest(userIdParamSchema),
   asyncHandler(controller.deleteUser)
 );

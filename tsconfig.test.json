@@ -1,13 +1,15 @@
 {
   "compilerOptions": {
     "target": "es2020",
-    "module": "commonjs",
+    "module": "esnext",
     "esModuleInterop": true,
     "allowJs": false,
     "strict": true,
     "skipLibCheck": true,
-    "types": ["jest", "node"],
+    "types": [
+      "jest",
+      "node"
+    ],
     "moduleResolution": "node"
   }
 }
-

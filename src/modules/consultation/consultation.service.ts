@@ -29,7 +29,14 @@ export class ConsultationService {
     this.notificationService = new NotificationService();
   }
 
-  list() {
+  async list(user?: { id: string; role: any }) {
+    if (user && user.role === 'MEDECIN') {
+      const medecin = await this.medecinRepository.findByUserId(user.id);
+      if (medecin) {
+        return this.repository.findAllByMedecinId(medecin.id);
+      }
+      return [];
+    }
     return this.repository.findAll();
   }
 

@@ -2,10 +2,27 @@ import { Prisma } from '@prisma/client';
 import prisma, { PrismaTransaction } from '../../lib/prisma.js';
 
 export class ConsultationRepository {
-  constructor(private readonly db = prisma) {}
+  constructor(private readonly db = prisma) { }
 
   findAll(tx: PrismaTransaction = this.db) {
     return tx.consultation.findMany({
+      include: {
+        patient: true,
+        medecin: { include: { user: true } },
+        diagnostiques: {
+          include: {
+            Medecin: {
+              include: { user: true }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  findAllByMedecinId(medecinId: string, tx: PrismaTransaction = this.db) {
+    return tx.consultation.findMany({
+      where: { medecinId },
       include: {
         patient: true,
         medecin: { include: { user: true } },

@@ -43,7 +43,14 @@ export class PatientService {
     this.medecinRepository = new MedecinRepository();
   }
 
-  list() {
+  async list(user?: { id: string; role: any }) {
+    if (user && user.role === 'MEDECIN') {
+      const medecin = await this.medecinRepository.findByUserId(user.id);
+      if (medecin) {
+        return this.repository.findAllByState(medecin.profession);
+      }
+      return []; // Fallback if medecin profile not found
+    }
     return this.repository.findAll();
   }
 

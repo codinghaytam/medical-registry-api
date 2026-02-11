@@ -16,8 +16,8 @@ import { getEnvironmentConfig, logConfiguration } from './utils/config.js';
 import { registerFeatureRoutes } from './modules/routes.js';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Fallback path resolution
+const rootDir = path.resolve();
 
 // Validate and get configuration
 const config = getEnvironmentConfig();
@@ -47,11 +47,10 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Serve files from images directory
-app.use('/uploads', express.static(path.join(__dirname, '../upload')), function (req, res, next) {
-});
+// Serve files from public and upload directories
+// Assuming run from project root
+app.use(express.static(path.join(rootDir, 'public'))); // Changed from src/public based on typical project roots
+app.use('/uploads', express.static(path.join(rootDir, 'upload')));
 
 registerFeatureRoutes(app);
 
@@ -60,11 +59,5 @@ app.use(errorHandler);
 
 const PORT = config.PORT;
 
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📁 Images directory serving at /uploads`);
-  console.log(`🌍 Environment: ${config.NODE_ENV}`);
-  console.log(`🔌 WebSocket server initialized`);
-})
-
+export { app, httpServer };
 export default app;

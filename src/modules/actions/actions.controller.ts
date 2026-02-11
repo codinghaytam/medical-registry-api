@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { ActionsService } from './actions.service.js';
 
 export class ActionsController {
-  constructor(private readonly service = new ActionsService()) {}
+  constructor(private readonly service = new ActionsService()) { }
 
   getActions = async (req: Request, res: Response) => {
     const actions = await this.service.list();

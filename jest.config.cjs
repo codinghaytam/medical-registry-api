@@ -1,9 +1,16 @@
 module.exports = {
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
-  testMatch: ['**/tests/unit/**/*.spec.ts', '**/tests/integration/**/*.spec.ts'],
+  extensionsToTreatAsEsm: ['.ts'],
+  testMatch: ['**/tests/**/*.spec.ts', '**/tests/**/*.test.ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
+  setupFiles: ['<rootDir>/tests/setup.ts'],
   transform: {
-    '^.+\\.ts$': ['ts-jest', { tsconfig: './tsconfig.test.json', diagnostics: { ignoreCodes: [151002] } }]
+    '^.+\\.ts$': ['ts-jest', {
+      useESM: true,
+      tsconfig: './tsconfig.test.json',
+      diagnostics: { ignoreCodes: [151002] }
+    }]
   },
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',

@@ -2,10 +2,12 @@ import { Request, Response } from 'express';
 import { PatientService } from './patient.service.js';
 
 export class PatientController {
-  constructor(private readonly service = new PatientService()) {}
+  constructor(private readonly service = new PatientService()) { }
 
-  getPatients = async (_req: Request, res: Response) => {
-    const patients = await this.service.list();
+  getPatients = async (req: Request, res: Response) => {
+    // Cast req to any to access dbUser attached by validateRole middleware
+    const user = (req as any).dbUser;
+    const patients = await this.service.list(user);
     res.status(200).json(patients);
   };
 

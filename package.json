@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "jest",
-    "start": "nodemon ./dist/app.js",
-    "telemetry:start": "npx tsx --import ./src/utils/instrumentation.ts src/app.ts",
+    "start": "nodemon ./dist/server.js",
+    "telemetry:start": "npx tsx --import ./src/utils/instrumentation.ts src/server.ts",
     "build": "tsc",
     "dev": "nodemon --exec \"npm run build && npm start\"",
     "setup": "node -e \"console.log('Please run setup.sh (Linux/Mac) or setup.bat (Windows) for initial setup')\"",
@@ -63,9 +63,11 @@
     "@types/jest": "^30.0.0",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.14.1",
+    "@types/supertest": "^6.0.3",
     "jest": "^30.2.0",
     "nodemon": "^3.1.9",
     "prisma": "6.4.0",
+    "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"

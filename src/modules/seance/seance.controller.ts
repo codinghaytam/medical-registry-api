@@ -2,10 +2,11 @@ import { Request, Response } from 'express';
 import { SeanceService } from './seance.service.js';
 
 export class SeanceController {
-  constructor(private readonly service = new SeanceService()) {}
+  constructor(private readonly service = new SeanceService()) { }
 
-  getSeances = async (_req: Request, res: Response) => {
-    const seances = await this.service.list();
+  getSeances = async (req: Request, res: Response) => {
+    const user = (req as any).dbUser;
+    const seances = await this.service.list(user);
     res.status(200).json(seances);
   };
 

@@ -2,10 +2,11 @@ import { Request, Response } from 'express';
 import { ConsultationService } from './consultation.service.js';
 
 export class ConsultationController {
-  constructor(private readonly service = new ConsultationService()) {}
+  constructor(private readonly service = new ConsultationService()) { }
 
-  getConsultations = async (_req: Request, res: Response) => {
-    const consultations = await this.service.list();
+  getConsultations = async (req: Request, res: Response) => {
+    const user = (req as any).dbUser;
+    const consultations = await this.service.list(user);
     res.status(200).json(consultations);
   };
 

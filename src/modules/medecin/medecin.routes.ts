@@ -3,6 +3,8 @@ import { validateKeycloakToken } from '../../utils/keycloak.js';
 import { validatePhone } from '../../utils/validation.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { validateRequest } from '../../middlewares/validation.middleware.js';
+import { validateRole } from '../../middlewares/role.middleware.js';
+import { Role } from '@prisma/client';
 import {
   createMedecinSchema,
   medecinEmailParamSchema,
@@ -15,42 +17,52 @@ import { MedecinController } from './medecin.controller.js';
 const router = Router();
 const controller = new MedecinController();
 
-router.get('/', validateKeycloakToken, asyncHandler(controller.getMedecins));
+// All routes require authentication
+router.use(validateKeycloakToken);
+
+// Read Routes - Public to authenticated users
+router.get(
+  '/',
+  validateRole([Role.ADMIN, Role.MEDECIN, Role.ETUDIANT]),
+  asyncHandler(controller.getMedecins)
+);
 router.get(
   '/profession/:profession',
-  validateKeycloakToken,
+  validateRole([Role.ADMIN, Role.MEDECIN, Role.ETUDIANT]),
   validateRequest(medecinProfessionParamSchema),
   asyncHandler(controller.getByProfession)
 );
 router.get(
   '/email/:email',
-  validateKeycloakToken,
+  validateRole([Role.ADMIN, Role.MEDECIN, Role.ETUDIANT]),
   validateRequest(medecinEmailParamSchema),
   asyncHandler(controller.getByEmail)
 );
 router.get(
   '/:id',
-  validateKeycloakToken,
+  validateRole([Role.ADMIN, Role.MEDECIN, Role.ETUDIANT]),
   validateRequest(medecinIdParamSchema),
   asyncHandler(controller.getMedecin)
 );
+
+// Write Routes - strictly ADMIN
 router.post(
   '/',
-  validateKeycloakToken,
+  validateRole([Role.ADMIN]),
   validatePhone,
   validateRequest(createMedecinSchema),
   asyncHandler(controller.createMedecin)
 );
 router.put(
   '/:id',
-  validateKeycloakToken,
+  validateRole([Role.ADMIN]),
   validatePhone,
   validateRequest(updateMedecinSchema),
   asyncHandler(controller.updateMedecin)
 );
 router.delete(
   '/:id',
-  validateKeycloakToken,
+  validateRole([Role.ADMIN]),
   validateRequest(medecinIdParamSchema),
   asyncHandler(controller.deleteMedecin)
 );

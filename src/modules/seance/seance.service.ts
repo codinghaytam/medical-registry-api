@@ -85,8 +85,19 @@ export class SeanceService {
     }
   }
 
-  async list() {
-    const seances = await this.repository.findAll();
+  async list(user?: { id: string; role: any }) {
+    let seances: any[] = [];
+    if (user && user.role === 'MEDECIN') {
+      const medecin = await this.medecinRepository.findByUserId(user.id);
+      if (medecin) {
+        seances = await this.repository.findAllByMedecinId(medecin.id);
+      } else {
+        seances = [];
+      }
+    } else {
+      seances = await this.repository.findAll();
+    }
+
     const kc = await safeKeycloakConnect();
     return Promise.all(seances.map((seance) => this.attachKeycloakInfo(seance, kc)));
   }

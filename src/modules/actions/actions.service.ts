@@ -5,7 +5,7 @@ import { logger } from '../../utils/logger.js';
 import { ActionsRepository } from './actions.repository.js';
 
 export class ActionsService {
-  constructor(private readonly repository = new ActionsRepository()) {}
+  constructor(private readonly repository = new ActionsRepository()) { }
 
   list() {
     return this.repository.findAll();

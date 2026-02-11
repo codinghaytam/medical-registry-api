@@ -2,10 +2,14 @@ import { Prisma, Profession } from '@prisma/client';
 import prisma, { PrismaTransaction } from '../../lib/prisma.js';
 
 export class PatientRepository {
-  constructor(private readonly db = prisma) {}
+  constructor(private readonly db = prisma) { }
 
   findAll(tx: PrismaTransaction = this.db) {
     return tx.patient.findMany();
+  }
+
+  findAllByState(state: Profession, tx: PrismaTransaction = this.db) {
+    return tx.patient.findMany({ where: { State: state } });
   }
 
   findById(id: string, tx: PrismaTransaction = this.db) {
