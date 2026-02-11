@@ -123,11 +123,29 @@ export class ConsultationService {
     });
   }
 
-  async updateDiagnosis(diagnosisId: string, payload: Partial<DiagnosisPayload>) {
+  async updateDiagnosis(diagnosisId: string, payload: Partial<DiagnosisPayload>, user?: { id: string; role: any }) {
+    if (user && user.role === 'MEDECIN') {
+      const diagnosis = await this.diagnostiqueRepository.findById(diagnosisId);
+      if (!diagnosis) {
+        throw ApiError.notFound('Diagnosis not found');
+      }
+
+      // Find the Medecin associated with this user
+      const medecin = await this.medecinRepository.findByUserId(user.id);
+
+      if (!medecin) {
+        throw ApiError.forbidden('User does not have a linked Medecin profile');
+      }
+
+      // Check if the medecin requesting the update is the owner of the diagnosis
+      if (diagnosis.medecinId !== medecin.id) {
+        throw ApiError.forbidden('You can only edit your own diagnoses');
+      }
+    }
+
     return this.diagnostiqueRepository.update(diagnosisId, {
       type: payload.type,
-      text: payload.text,
-      Medecin: payload.medecinId ? { connect: { id: payload.medecinId } } : undefined
+      text: payload.text
     });
   }
 

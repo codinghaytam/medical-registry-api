@@ -37,7 +37,8 @@ export class ConsultationController {
   };
 
   updateDiagnosis = async (req: Request, res: Response) => {
-    const diagnosis = await this.service.updateDiagnosis(req.params.diagnosisId as string, req.body);
+    const user = (req as any).dbUser;
+    const diagnosis = await this.service.updateDiagnosis(req.params.diagnosisId as string, req.body, user);
     res.status(200).json(diagnosis);
   };
 
