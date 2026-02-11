@@ -6,15 +6,15 @@
   "scripts": {
     "test": "jest",
     "start": "node ./dist/server.js",
-    "telemetry:start": "npx tsx --import ./src/utils/instrumentation.ts src/server.ts",
+    "telemetry:start": "tsx --import ./src/utils/instrumentation.ts src/server.ts",
     "build": "tsc",
-    "dev": "nodemon --exec \"npm run build && node ./dist/server.js\"",
+    "dev": "tsx watch src/server.ts",
     "setup": "node -e \"console.log('Please run setup.sh (Linux/Mac) or setup.bat (Windows) for initial setup')\"",
     "env:check": "node -e \"require('./dist/utils/config.js').getEnvironmentConfig(); console.log('✅ Environment configuration is valid')\"",
-    "prisma:generate": "npx prisma generate",
-    "prisma:migrate": "npx prisma migrate dev",
-    "prisma:deploy": "npx prisma migrate deploy",
-    "prisma:studio": "npx prisma studio"
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio"
   },
   "author": "",
   "license": "ISC",

@@ -265,19 +265,24 @@ async function enrichDecodedPayload(decoded) {
     }
     let fallbackRole = null;
     let dbUserId = null;
-    if (normalizedRoles.size === 0 && decoded.email) {
+    // Always fetch user from DB if email is present to get local ID
+    if (decoded.email) {
         const dbUser = await userRepository.findByEmail(decoded.email);
         if (dbUser) {
-            fallbackRole = dbUser.role;
             dbUserId = dbUser.id;
-            normalizedRoles.add(dbUser.role);
+            // Only use role from DB if no roles from Keycloak
+            if (normalizedRoles.size === 0) {
+                fallbackRole = dbUser.role;
+                normalizedRoles.add(dbUser.role);
+            }
         }
     }
     return {
         ...decoded,
         roles: Array.from(normalizedRoles),
         fallbackRole,
-        dbUserId
+        dbUserId,
+        id: dbUserId
     };
 }
 export async function validateKeycloakToken(req, res, next) {
@@ -353,3 +358,5 @@ export async function verifyKeycloakToken(token) {
         return null;
     }
 }
+// Export authenticate as an alias for validateKeycloakToken
+export const authenticate = validateKeycloakToken;

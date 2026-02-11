@@ -61,5 +61,5 @@ RUN pnpm exec prisma generate
 RUN pnpm exec tsc
 
 # Start the application with OpenTelemetry instrumentation
-CMD ["sh", "-c", "npx prisma migrate deploy && node --import ./dist/utils/instrumentation.js ./dist/app.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node --import ./dist/utils/instrumentation.js ./dist/server.js"]
 EXPOSE 3000

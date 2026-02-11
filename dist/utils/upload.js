@@ -1,50 +1,98 @@
 import multer from "multer";
 import { Storage } from "@google-cloud/storage";
-import MulterGoogleStorage from "multer-google-storage";
 import path from "path";
 import { getEnvironmentConfig } from "./config.js";
 const config = getEnvironmentConfig();
 // Initialize Google Cloud Storage
+// It will automatically use GOOGLE_APPLICATION_CREDENTIALS environment variable
+// which we configure in the Dockerfile to point to the decoded JSON key file.
 const storage = new Storage({
     projectId: config.GCS_PROJECT_ID,
-    credentials: JSON.parse(config.GCS_SA_KEY)
 });
 const bucket = storage.bucket(config.GCS_BUCKET_NAME);
-// Configure multer to use Google Cloud Storage
-const gcsStorage = new MulterGoogleStorage({
-    bucket: config.GCS_BUCKET_NAME,
-    projectId: config.GCS_PROJECT_ID,
-    credentials: JSON.parse(config.GCS_SA_KEY),
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-        const ext = path.extname(file.originalname);
-        cb(null, file.fieldname + "-" + uniqueSuffix + ext);
-    }
-});
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
-        cb(null, true);
-    }
-    else {
-        cb(new Error("Invalid file type, only JPEG and PNG is allowed!"), false);
-    }
-};
+// Configure multer to use Memory Storage (we handle GCS upload manually)
 const upload = multer({
-    storage: gcsStorage,
-    fileFilter: fileFilter,
+    storage: multer.memoryStorage(),
     limits: {
         fileSize: 1024 * 1024 * 5 // 5MB max file size
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
+            cb(null, true);
+        }
+        else {
+            cb(new Error("Invalid file type, only JPEG and PNG is allowed!"));
+        }
     }
 });
-// Method to upload a single image
-const uploadSingleImage = upload.single("sondagePhoto");
-// Method to upload multiple images
-const uploadMultipleImages = upload.array("sondagePhotos", 10);
+// Helper to upload a single file buffer to GCS
+const uploadFileToGCS = (file) => {
+    return new Promise((resolve, reject) => {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const ext = path.extname(file.originalname);
+        const filename = file.fieldname + "-" + uniqueSuffix + ext;
+        const blob = bucket.file(filename);
+        const blobStream = blob.createWriteStream({
+            resumable: false,
+            contentType: file.mimetype,
+        });
+        blobStream.on('error', (err) => {
+            reject(err);
+        });
+        blobStream.on('finish', () => {
+            // Set the file properties to match what controllers expect
+            file.filename = filename;
+            file.path = `https://storage.googleapis.com/${config.GCS_BUCKET_NAME}/${filename}`;
+            resolve();
+        });
+        blobStream.end(file.buffer);
+    });
+};
+// Middleware wrapper for single image upload that uploads to GCS after multer parses it
+const uploadSingleImage = (req, res, next) => {
+    const handler = upload.single("sondagePhoto");
+    handler(req, res, async (err) => {
+        if (err)
+            return next(err);
+        if (!req.file)
+            return next();
+        try {
+            await uploadFileToGCS(req.file);
+            next();
+        }
+        catch (error) {
+            next(error);
+        }
+    });
+};
+// Middleware wrapper for multiple images upload
+const uploadMultipleImages = (req, res, next) => {
+    const handler = upload.array("sondagePhotos", 10);
+    handler(req, res, async (err) => {
+        if (err)
+            return next(err);
+        if (!req.files || (Array.isArray(req.files) && req.files.length === 0))
+            return next();
+        try {
+            const files = req.files;
+            await Promise.all(files.map(file => uploadFileToGCS(file)));
+            next();
+        }
+        catch (error) {
+            next(error);
+        }
+    });
+};
 // Method to delete a file from GCS
 const deleteFile = async (filePath) => {
     try {
-        // filePath is the full name/path of the object in the bucket
-        await bucket.file(filePath).delete();
+        let objectName = filePath;
+        // Extract object name if full URL is passed
+        if (filePath.startsWith('http')) {
+            const parts = filePath.split('/');
+            objectName = parts[parts.length - 1]; // This is simplistic, but works for standard GCS public URLs
+        }
+        await bucket.file(objectName).delete();
         return true;
     }
     catch (error) {
@@ -60,20 +108,25 @@ const updateFile = async (oldFilePath, req, res) => {
             await deleteFile(oldFilePath);
         }
         // Upload the new file
+        // We wrap uploadSingleImage which is now a (req, res, next) middleware
         return new Promise((resolve, reject) => {
-            uploadSingleImage(req, res, (err) => {
+            // Create a fake 'next' function to capture success or error
+            const next = (err) => {
                 if (err) {
                     console.error("Error uploading new file during update:", err);
                     reject(null);
-                    return;
                 }
-                if (!req.file) {
-                    reject(null);
-                    return;
+                else {
+                    // Success
+                    if (!req.file) {
+                        reject(null);
+                    }
+                    else {
+                        resolve(req.file.filename);
+                    }
                 }
-                // The filename from multer-google-storage is the object name in the bucket
-                resolve(req.file.filename);
-            });
+            };
+            uploadSingleImage(req, res, next);
         });
     }
     catch (error) {
@@ -104,18 +157,21 @@ const deleteImageIfExists = async (sondagePhoto) => {
 // Helper function to handle uploadSingleImage as a Promise
 const uploadImagePromise = (req, res) => {
     return new Promise((resolve) => {
-        uploadSingleImage(req, res, (err) => {
+        const next = (err) => {
             if (err) {
                 console.error("Error uploading image:", err);
                 resolve(null);
-                return;
             }
-            if (!req.file) {
-                resolve(null);
-                return;
+            else {
+                if (!req.file) {
+                    resolve(null);
+                }
+                else {
+                    resolve(req.file.filename);
+                }
             }
-            resolve(req.file.filename);
-        });
+        };
+        uploadSingleImage(req, res, next);
     });
 };
 export { upload, uploadSingleImage, uploadMultipleImages, deleteFile, updateFile, isValidImageFile, getFileExtension, deleteImageIfExists, uploadImagePromise };
